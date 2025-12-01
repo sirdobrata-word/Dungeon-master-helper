@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>D&D Characters List</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>⚔️ D&D Characters</h1>
+        <p>Список всех созданных персонажей. Можно просматривать и редактировать характеристики.</p>
+
+        <nav style="margin-top: 8px; font-size: 13px">
+          <a href="/ui/index.html" style="color:#8b7355; text-decoration:none; margin-right:16px;">🎲 Создать</a>
+          <a href="/ui/list.html" style="color:#d4af37; text-decoration:none; margin-right:16px; text-shadow: 0 0 8px rgba(212,175,55,0.6);">📜 Персонажи</a>
+          <a href="/ui/monsters.html" style="color:#8b7355; text-decoration:none; margin-right:16px;">👹 Монстры</a>
+          <a href="/ui/companies.html" style="color:#8b7355; text-decoration:none;">⚔ Склад</a>
+        </nav>
+      </header>
+
+      <main class="app-main" style="grid-template-columns: minmax(0, 1.6fr);">
+        <section class="card">
+          <h2>Мои персонажи</h2>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span id="list-status" class="status">Загрузка списка...</span>
+            <button id="reload-btn" class="btn primary" style="padding:7px 14px; font-size:13px;">
+              Обновить
+            </button>
+          </div>
+
+          <div id="empty" class="result-empty" style="display:none;">
+            Пока нет ни одного героя. Создай первого на странице
+            <a href="/ui/index.html" style="color:#a5b4fc; text-decoration:none;">создания персонажа</a>.
+          </div>
+
+          <div id="list" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span>D&D Character Sheet Service · Список персонажей</span>
+      </footer>
+    </div>
+
+    <script>
+      const listEl = document.getElementById("list");
+      const emptyEl = document.getElementById("empty");
+      const statusEl = document.getElementById("list-status");
+      const reloadBtn = document.getElementById("reload-btn");
+
+      async function loadCharacters() {
+        statusEl.textContent = "Загрузка списка...";
+        statusEl.classList.remove("error");
+        listEl.innerHTML = "";
+        emptyEl.style.display = "none";
+
+        try {
+          const res = await fetch("/characters", { method: "GET" });
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            const msg = (data && data.error) || "Ошибка загрузки персонажей";
+            statusEl.textContent = msg;
+            statusEl.classList.add("error");
+            return;
+          }
+
+          if (!Array.isArray(data) || data.length === 0) {
+            statusEl.textContent = "Список пуст";
+            emptyEl.style.display = "block";
+            return;
+          }
+
+          statusEl.textContent = `Найдено персонажей: ${data.length}`;
+          renderList(data);
+        } catch (err) {
+          console.error(err);
+          statusEl.textContent = "Сетевой сбой. Проверь соединение или лог сервера.";
+          statusEl.classList.add("error");
+        }
+      }
+
+      function renderList(items) {
+        listEl.innerHTML = "";
+
+        items.forEach((ch) => {
+          const card = document.createElement("div");
+          card.className = "grid-card";
+          card.dataset.characterId = ch.id;
+
+          const header = document.createElement("div");
+          header.style.display = "flex";
+          header.style.justifyContent = "space-between";
+          header.style.alignItems = "center";
+          header.style.gap = "8px";
+
+          const left = document.createElement("div");
+          const name = document.createElement("div");
+          name.style.fontWeight = "600";
+          name.textContent = ch.name || "(без имени)";
+
+          const meta = document.createElement("div");
+          meta.style.fontSize = "13px";
+          meta.style.color = "#9ca3af";
+          meta.textContent = `${ch.race || "?"} · ${ch.class || "?"} · уровень ${
+            ch.level || "?"
+          }`;
+
+          left.appendChild(name);
+          left.appendChild(meta);
+
+          const id = document.createElement("code");
+          id.style.fontSize = "11px";
+          id.textContent = ch.id || "";
+
+          header.appendChild(left);
+          header.appendChild(id);
+
+          const details = document.createElement("div");
+          details.className = "character-details";
+          details.style.marginTop = "8px";
+          details.style.fontSize = "13px";
+          details.style.display = "none";
+
+          const actions = document.createElement("div");
+          actions.className = "character-actions";
+          actions.style.marginTop = "8px";
+          actions.style.display = "flex";
+          actions.style.gap = "8px";
+
+          const expandBtn = document.createElement("button");
+          expandBtn.textContent = "Показать детали";
+          expandBtn.className = "btn";
+          expandBtn.style.padding = "5px 10px";
+          expandBtn.style.fontSize = "12px";
+
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "Редактировать";
+          editBtn.className = "btn";
+          editBtn.style.padding = "5px 10px";
+          editBtn.style.fontSize = "12px";
+          editBtn.style.display = "none";
+
+          const saveBtn = document.createElement("button");
+          saveBtn.textContent = "Сохранить";
+          saveBtn.className = "btn primary";
+          saveBtn.style.padding = "5px 10px";
+          saveBtn.style.fontSize = "12px";
+          saveBtn.style.display = "none";
+
+          const cancelBtn = document.createElement("button");
+          cancelBtn.textContent = "Отмена";
+          cancelBtn.className = "btn";
+          cancelBtn.style.padding = "5px 10px";
+          cancelBtn.style.fontSize = "12px";
+          cancelBtn.style.display = "none";
+
+          let editMode = false;
+          let originalData = { ...ch };
+
+          function renderDetails(character, editable = false) {
+            const ab = character.abilityScores || {};
+            const hpCurrent = character.currentHitPoints ?? 0;
+            const hpMax = character.maxHitPoints ?? 0;
+
+            if (editable) {
+              details.innerHTML = `
+                <div style="margin-bottom:4px; color:#9ca3af;">Характеристики</div>
+                <div class="editable-row" style="display:flex; flex-wrap:wrap; gap:6px 10px; margin-bottom:6px;">
+                  ${editableInput("str", "STR", ab.strength)}
+                  ${editableInput("dex", "DEX", ab.dexterity)}
+                  ${editableInput("con", "CON", ab.constitution)}
+                  ${editableInput("int", "INT", ab.intelligence)}
+                  ${editableInput("wis", "WIS", ab.wisdom)}
+                  ${editableInput("cha", "CHA", ab.charisma)}
+                </div>
+                <div style="margin:8px 0 4px; color:#9ca3af;">Бой</div>
+                <div class="editable-row" style="display:flex; flex-wrap:wrap; gap:6px 10px;">
+                  ${editableInput("ac", "AC", character.armorClass)}
+                  ${editableInput("hp-current", "HP текущие", hpCurrent)}
+                  ${editableInput("hp-max", "HP макс", hpMax)}
+                  ${editableInput("initiative", "Initiative", character.initiative)}
+                  ${editableInput("speed", "Speed", character.speed)}
+                  ${editableInput("prof", "Prof", character.proficiencyBonus)}
+                </div>
+              `;
+            } else {
+              details.innerHTML = `
+                <div style="margin-bottom:4px; color:#9ca3af;">Характеристики</div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px 10px; margin-bottom:6px;">
+                  ${renderPill("STR", ab.strength)}
+                  ${renderPill("DEX", ab.dexterity)}
+                  ${renderPill("CON", ab.constitution)}
+                  ${renderPill("INT", ab.intelligence)}
+                  ${renderPill("WIS", ab.wisdom)}
+                  ${renderPill("CHA", ab.charisma)}
+                </div>
+                <div style="margin-bottom:4px; color:#9ca3af;">Бой</div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px 10px;">
+                  ${renderPill("AC", character.armorClass)}
+                  ${renderPill("ХП", `${hpCurrent} / ${hpMax}`)}
+                  ${renderPill("Initiative", character.initiative)}
+                  ${renderPill("Speed", character.speed)}
+                  ${renderPill("Prof", character.proficiencyBonus)}
+                </div>
+              `;
+            }
+          }
+
+          renderDetails(ch, false);
+
+          expandBtn.addEventListener("click", () => {
+            const isHidden = details.style.display === "none";
+            details.style.display = isHidden ? "block" : "none";
+            editBtn.style.display = isHidden ? "inline-flex" : "none";
+            expandBtn.textContent = isHidden ? "Скрыть детали" : "Показать детали";
+          });
+
+          editBtn.addEventListener("click", () => {
+            editMode = true;
+            originalData = { ...ch };
+            renderDetails(ch, true);
+            expandBtn.style.display = "none";
+            editBtn.style.display = "none";
+            saveBtn.style.display = "inline-flex";
+            cancelBtn.style.display = "inline-flex";
+            details.style.display = "block";
+          });
+
+          cancelBtn.addEventListener("click", () => {
+            editMode = false;
+            renderDetails(originalData, false);
+            expandBtn.style.display = "inline-flex";
+            editBtn.style.display = "inline-flex";
+            saveBtn.style.display = "none";
+            cancelBtn.style.display = "none";
+          });
+
+          saveBtn.addEventListener("click", async () => {
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Сохранение...";
+
+            try {
+              const abInputs = details.querySelectorAll(".editable-row input");
+              const ab = {};
+              const combat = {};
+
+              abInputs.forEach((input) => {
+                const name = input.dataset.field;
+                const value = parseInt(input.value) || 0;
+
+                if (name === "str") ab.strength = value;
+                else if (name === "dex") ab.dexterity = value;
+                else if (name === "con") ab.constitution = value;
+                else if (name === "int") ab.intelligence = value;
+                else if (name === "wis") ab.wisdom = value;
+                else if (name === "cha") ab.charisma = value;
+                else if (name === "ac") combat.armorClass = value;
+                else if (name === "hp-current") combat.currentHitPoints = value;
+                else if (name === "hp-max") combat.maxHitPoints = value;
+                else if (name === "initiative") combat.initiative = value;
+                else if (name === "speed") combat.speed = value;
+                else if (name === "prof") combat.proficiencyBonus = value;
+              });
+
+              const updated = {
+                ...originalData,
+                abilityScores: ab,
+                ...combat,
+              };
+
+              const res = await fetch(`/characters/${ch.id}`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(updated),
+              });
+
+              const data = await res.json().catch(() => null);
+
+              if (!res.ok) {
+                const msg = (data && data.error) || "Ошибка сохранения";
+                alert(msg);
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Сохранить";
+                return;
+              }
+
+              originalData = { ...data };
+              renderDetails(data, false);
+              editMode = false;
+              expandBtn.style.display = "inline-flex";
+              editBtn.style.display = "inline-flex";
+              saveBtn.style.display = "none";
+              cancelBtn.style.display = "none";
+              saveBtn.textContent = "Сохранить";
+              saveBtn.disabled = false;
+
+              statusEl.textContent = "Персонаж успешно обновлён";
+              statusEl.classList.remove("error");
+              setTimeout(() => {
+                statusEl.textContent = `Найдено персонажей: ${items.length}`;
+              }, 2000);
+            } catch (err) {
+              console.error(err);
+              alert("Сетевой сбой при сохранении");
+              saveBtn.disabled = false;
+              saveBtn.textContent = "Сохранить";
+            }
+          });
+
+          actions.appendChild(expandBtn);
+          actions.appendChild(editBtn);
+          actions.appendChild(saveBtn);
+          actions.appendChild(cancelBtn);
+
+          card.appendChild(header);
+          card.appendChild(details);
+          card.appendChild(actions);
+
+          listEl.appendChild(card);
+        });
+      }
+
+      function editableInput(field, label, value) {
+        const v = value === null || value === undefined || value === "" ? "" : value;
+        return `
+          <label style="display:flex; flex-direction:column; gap:2px; font-size:11px; color:#9ca3af;">
+            <span>${label}</span>
+            <input
+              data-field="${field}"
+              type="number"
+              value="${v}"
+              style="padding:4px 6px; border-radius:6px; border:1px solid #4b5563; background:#020617; color:#e5e7eb; font-size:12px; width:70px;"
+            />
+          </label>
+        `;
+      }
+
+      function renderPill(label, value) {
+        const v =
+          value === null || value === undefined || value === ""
+            ? "-"
+            : value;
+        return `<span style="
+          border-radius:999px;
+          border:1px solid rgba(148,163,184,0.5);
+          padding:4px 8px;
+          background:rgba(15,23,42,0.9);
+        "><strong>${label}:</strong> ${v}</span>`;
+      }
+
+      reloadBtn.addEventListener("click", () => {
+        loadCharacters();
+      });
+
+      loadCharacters();
+    </script>
+  </body>
+</html>

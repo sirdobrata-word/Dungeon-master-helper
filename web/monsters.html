@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>D&D Monster Library</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>⚔️ Библиотека Монстров</h1>
+        <p>Каталог тварей и чудовищ для твоих приключений</p>
+
+        <nav style="margin-top: 12px; font-size: 13px">
+          <a href="/ui/index.html" style="color:#8b7355; text-decoration:none; margin-right:16px;">🎲 Создать</a>
+          <a href="/ui/list.html" style="color:#8b7355; text-decoration:none; margin-right:16px;">📜 Персонажи</a>
+          <a href="/ui/monsters.html" style="color:#d4af37; text-decoration:none; margin-right:16px; text-shadow: 0 0 8px rgba(212,175,55,0.6);">👹 Монстры</a>
+          <a href="/ui/companies.html" style="color:#8b7355; text-decoration:none;">⚔ Склад</a>
+        </nav>
+      </header>
+
+      <main class="app-main" style="grid-template-columns: minmax(0, 1fr);">
+        <section class="card">
+          <h2>📚 Монстры</h2>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap: wrap; gap: 10px;">
+            <span id="monster-status" class="status">Загрузка библиотеки...</span>
+            <div style="display: flex; gap: 8px;">
+              <button id="reload-btn" class="btn" style="padding:7px 14px; font-size:12px;">
+                🔄 Обновить
+              </button>
+              <button id="add-monster-btn" class="btn primary" style="padding:7px 14px; font-size:12px;">
+                ➕ Добавить монстра
+              </button>
+              <button id="load-samples-btn" class="btn" style="padding:7px 14px; font-size:12px;">
+                📚 Загрузить примеры
+              </button>
+            </div>
+          </div>
+
+          <div id="empty" class="result-empty" style="display:none;">
+            Библиотека пуста. Добавь первого монстра, нажав кнопку "Добавить монстра".
+          </div>
+
+          <div id="monster-list" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </section>
+
+        <!-- Форма добавления/редактирования монстра -->
+        <section class="card" id="monster-form-card" style="display: none;">
+          <h2 id="form-title">Добавить монстра</h2>
+          <form id="monster-form">
+            <div class="form-row">
+              <div class="field">
+                <label for="monster-name">Имя</label>
+                <input id="monster-name" type="text" required placeholder="Дракон" />
+              </div>
+              <div class="field">
+                <label for="monster-type">Тип</label>
+                <input id="monster-type" type="text" required placeholder="Dragon" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="monster-size">Размер</label>
+                <select id="monster-size">
+                  <option value="Tiny">Tiny</option>
+                  <option value="Small">Small</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="Large">Large</option>
+                  <option value="Huge">Huge</option>
+                  <option value="Gargantuan">Gargantuan</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="monster-alignment">Мировоззрение</label>
+                <input id="monster-alignment" type="text" placeholder="Chaotic Evil" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="monster-ac">КД (AC)</label>
+                <input id="monster-ac" type="number" min="0" max="30" placeholder="18" />
+              </div>
+              <div class="field">
+                <label for="monster-hp">Хиты</label>
+                <input id="monster-hp" type="number" min="1" placeholder="200" />
+              </div>
+              <div class="field">
+                <label for="monster-hitdice">Кости хитов</label>
+                <input id="monster-hitdice" type="text" placeholder="20d10+100" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field" style="flex: 1;">
+                <label for="monster-speed">Скорость</label>
+                <input id="monster-speed" type="text" placeholder="30 ft., fly 60 ft." />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="monster-str">STR</label>
+                <input id="monster-str" type="number" min="1" max="30" placeholder="25" />
+              </div>
+              <div class="field">
+                <label for="monster-dex">DEX</label>
+                <input id="monster-dex" type="number" min="1" max="30" placeholder="10" />
+              </div>
+              <div class="field">
+                <label for="monster-con">CON</label>
+                <input id="monster-con" type="number" min="1" max="30" placeholder="23" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="monster-int">INT</label>
+                <input id="monster-int" type="number" min="1" max="30" placeholder="16" />
+              </div>
+              <div class="field">
+                <label for="monster-wis">WIS</label>
+                <input id="monster-wis" type="number" min="1" max="30" placeholder="15" />
+              </div>
+              <div class="field">
+                <label for="monster-cha">CHA</label>
+                <input id="monster-cha" type="number" min="1" max="30" placeholder="19" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field" style="flex: 1;">
+                <label for="monster-cr">Класс опасности (CR)</label>
+                <input id="monster-cr" type="text" placeholder="10 (5,900 XP)" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field" style="flex: 1;">
+                <label for="monster-description">Описание</label>
+                <textarea id="monster-description" rows="3" placeholder="Описание монстра..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn primary" id="monster-submit-btn">Сохранить</button>
+              <button type="button" class="btn" id="monster-cancel-btn">Отмена</button>
+              <span id="monster-form-status" class="status"></span>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span>D&D Character Sheet Service · Библиотека монстров</span>
+      </footer>
+    </div>
+
+    <script>
+      const monsterList = document.getElementById("monster-list");
+      const emptyEl = document.getElementById("empty");
+      const statusEl = document.getElementById("monster-status");
+      const reloadBtn = document.getElementById("reload-btn");
+      const addMonsterBtn = document.getElementById("add-monster-btn");
+      const loadSamplesBtn = document.getElementById("load-samples-btn");
+      const monsterFormCard = document.getElementById("monster-form-card");
+      const monsterForm = document.getElementById("monster-form");
+      const formTitle = document.getElementById("form-title");
+      const submitBtn = document.getElementById("monster-submit-btn");
+      const cancelBtn = document.getElementById("monster-cancel-btn");
+      const formStatus = document.getElementById("monster-form-status");
+
+      let editingMonsterId = null;
+
+      async function loadMonsters() {
+        statusEl.textContent = "Загрузка библиотеки...";
+        statusEl.classList.remove("error");
+        monsterList.innerHTML = "";
+        emptyEl.style.display = "none";
+
+        try {
+          const res = await fetch("/monsters", { method: "GET" });
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            const msg = (data && data.error) || "Ошибка загрузки монстров";
+            statusEl.textContent = msg;
+            statusEl.classList.add("error");
+            return;
+          }
+
+          if (!Array.isArray(data) || data.length === 0) {
+            statusEl.textContent = "Библиотека пуста";
+            emptyEl.style.display = "block";
+            return;
+          }
+
+          statusEl.textContent = `Найдено монстров: ${data.length}`;
+          renderMonsters(data);
+        } catch (err) {
+          console.error(err);
+          statusEl.textContent = "Сетевой сбой";
+          statusEl.classList.add("error");
+        }
+      }
+
+      function renderMonsters(monsters) {
+        monsterList.innerHTML = "";
+
+        monsters.forEach((monster) => {
+          const card = document.createElement("div");
+          card.className = "monster-card";
+
+          const ab = monster.abilityScores || {};
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+              <div>
+                <div class="monster-name">${monster.name || "(без имени)"}</div>
+                <div class="monster-type">${monster.type || "?"} · ${monster.size || "?"} · ${monster.alignment || "?"}</div>
+              </div>
+              <code style="font-size: 10px; color: #5a4a3a;">${monster.id || ""}</code>
+            </div>
+
+            <div class="monster-stats">
+              <div class="monster-stat">
+                <div class="monster-stat-label">КД</div>
+                <div class="monster-stat-value">${monster.armorClass ?? "-"}</div>
+              </div>
+              <div class="monster-stat">
+                <div class="monster-stat-label">Хиты</div>
+                <div class="monster-stat-value">${monster.hitPoints ?? "-"}</div>
+              </div>
+              <div class="monster-stat">
+                <div class="monster-stat-label">Скорость</div>
+                <div class="monster-stat-value" style="font-size: 12px;">${monster.speed || "-"}</div>
+              </div>
+              <div class="monster-stat">
+                <div class="monster-stat-label">CR</div>
+                <div class="monster-stat-value" style="font-size: 12px;">${monster.challengeRating || "-"}</div>
+              </div>
+            </div>
+
+            ${ab.STR || ab.DEX || ab.CON || ab.INT || ab.WIS || ab.CHA ? `
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(139,0,0,0.3);">
+              <div style="font-size: 11px; color: #5a4a3a; margin-bottom: 6px; text-transform: uppercase;">Характеристики</div>
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px;">
+                ${ab.STR ? `<span><strong>STR:</strong> ${ab.STR}</span>` : ""}
+                ${ab.DEX ? `<span><strong>DEX:</strong> ${ab.DEX}</span>` : ""}
+                ${ab.CON ? `<span><strong>CON:</strong> ${ab.CON}</span>` : ""}
+                ${ab.INT ? `<span><strong>INT:</strong> ${ab.INT}</span>` : ""}
+                ${ab.WIS ? `<span><strong>WIS:</strong> ${ab.WIS}</span>` : ""}
+                ${ab.CHA ? `<span><strong>CHA:</strong> ${ab.CHA}</span>` : ""}
+              </div>
+            </div>
+            ` : ""}
+
+            ${monster.description ? `
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(139,0,0,0.3);">
+              <div style="font-size: 12px; color: #8b7355; line-height: 1.6;">${monster.description}</div>
+            </div>
+            ` : ""}
+
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+              <button class="btn" onclick="editMonster('${monster.id}')" style="padding: 6px 12px; font-size: 11px;">✏️ Редактировать</button>
+              <button class="btn" onclick="deleteMonster('${monster.id}')" style="padding: 6px 12px; font-size: 11px; background: rgba(139,0,0,0.6);">🗑️ Удалить</button>
+            </div>
+          `;
+
+          monsterList.appendChild(card);
+        });
+      }
+
+      addMonsterBtn.addEventListener("click", () => {
+        editingMonsterId = null;
+        formTitle.textContent = "Добавить монстра";
+        submitBtn.textContent = "Сохранить";
+        monsterForm.reset();
+        monsterFormCard.style.display = "block";
+        monsterFormCard.scrollIntoView({ behavior: "smooth" });
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        monsterFormCard.style.display = "none";
+        editingMonsterId = null;
+      });
+
+      monsterForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        formStatus.textContent = "Сохранение...";
+        formStatus.classList.remove("error");
+
+        const abilityScores = {};
+        const str = document.getElementById("monster-str").value;
+        const dex = document.getElementById("monster-dex").value;
+        const con = document.getElementById("monster-con").value;
+        const int = document.getElementById("monster-int").value;
+        const wis = document.getElementById("monster-wis").value;
+        const cha = document.getElementById("monster-cha").value;
+
+        if (str) abilityScores.STR = parseInt(str) || 0;
+        if (dex) abilityScores.DEX = parseInt(dex) || 0;
+        if (con) abilityScores.CON = parseInt(con) || 0;
+        if (int) abilityScores.INT = parseInt(int) || 0;
+        if (wis) abilityScores.WIS = parseInt(wis) || 0;
+        if (cha) abilityScores.CHA = parseInt(cha) || 0;
+
+        const monster = {
+          name: document.getElementById("monster-name").value.trim(),
+          type: document.getElementById("monster-type").value.trim(),
+          size: document.getElementById("monster-size").value,
+          alignment: document.getElementById("monster-alignment").value.trim(),
+          armorClass: parseInt(document.getElementById("monster-ac").value) || 10,
+          hitPoints: parseInt(document.getElementById("monster-hp").value) || 1,
+          hitDice: document.getElementById("monster-hitdice").value.trim(),
+          speed: document.getElementById("monster-speed").value.trim(),
+          abilityScores: abilityScores,
+          challengeRating: document.getElementById("monster-cr").value.trim(),
+          description: document.getElementById("monster-description").value.trim(),
+        };
+
+        try {
+          const url = editingMonsterId ? `/monsters/${editingMonsterId}` : "/monsters";
+          const method = editingMonsterId ? "PUT" : "POST";
+
+          const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(monster),
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            const msg = (data && data.error) || "Ошибка сохранения";
+            formStatus.textContent = msg;
+            formStatus.classList.add("error");
+            return;
+          }
+
+          formStatus.textContent = "Успешно сохранено";
+          formStatus.classList.remove("error");
+          monsterFormCard.style.display = "none";
+          editingMonsterId = null;
+          loadMonsters();
+        } catch (err) {
+          console.error(err);
+          formStatus.textContent = "Сетевой сбой";
+          formStatus.classList.add("error");
+        }
+      });
+
+      window.editMonster = async (id) => {
+        try {
+          const res = await fetch(`/monsters/${id}`);
+          const monster = await res.json();
+
+          editingMonsterId = id;
+          formTitle.textContent = "Редактировать монстра";
+          submitBtn.textContent = "Обновить";
+
+          document.getElementById("monster-name").value = monster.name || "";
+          document.getElementById("monster-type").value = monster.type || "";
+          document.getElementById("monster-size").value = monster.size || "Medium";
+          document.getElementById("monster-alignment").value = monster.alignment || "";
+          document.getElementById("monster-ac").value = monster.armorClass || "";
+          document.getElementById("monster-hp").value = monster.hitPoints || "";
+          document.getElementById("monster-hitdice").value = monster.hitDice || "";
+          document.getElementById("monster-speed").value = monster.speed || "";
+          document.getElementById("monster-cr").value = monster.challengeRating || "";
+          document.getElementById("monster-description").value = monster.description || "";
+
+          const ab = monster.abilityScores || {};
+          document.getElementById("monster-str").value = ab.STR || "";
+          document.getElementById("monster-dex").value = ab.DEX || "";
+          document.getElementById("monster-con").value = ab.CON || "";
+          document.getElementById("monster-int").value = ab.INT || "";
+          document.getElementById("monster-wis").value = ab.WIS || "";
+          document.getElementById("monster-cha").value = ab.CHA || "";
+
+          monsterFormCard.style.display = "block";
+          monsterFormCard.scrollIntoView({ behavior: "smooth" });
+        } catch (err) {
+          alert("Ошибка загрузки монстра");
+        }
+      };
+
+      window.deleteMonster = async (id) => {
+        if (!confirm("Удалить этого монстра?")) return;
+
+        try {
+          const res = await fetch(`/monsters/${id}`, { method: "DELETE" });
+          if (res.ok) {
+            loadMonsters();
+          } else {
+            alert("Ошибка удаления");
+          }
+        } catch (err) {
+          alert("Сетевой сбой");
+        }
+      };
+
+      reloadBtn.addEventListener("click", loadMonsters);
+
+      loadSamplesBtn.addEventListener("click", async () => {
+        if (!confirm("Загрузить примеры монстров? (Красный Дракон, Лич, Бехолдер, Вампир, Тролль)")) return;
+
+        loadSamplesBtn.disabled = true;
+        loadSamplesBtn.textContent = "Загрузка...";
+
+        try {
+          const res = await fetch("/monsters/load-samples", { method: "POST" });
+          const data = await res.json().catch(() => null);
+
+          if (res.ok) {
+            statusEl.textContent = `Загружено примеров: ${data.count || 0}`;
+            statusEl.classList.remove("error");
+            loadMonsters();
+          } else {
+            statusEl.textContent = (data && data.error) || "Ошибка загрузки";
+            statusEl.classList.add("error");
+          }
+        } catch (err) {
+          statusEl.textContent = "Сетевой сбой";
+          statusEl.classList.add("error");
+        } finally {
+          loadSamplesBtn.disabled = false;
+          loadSamplesBtn.textContent = "📚 Загрузить примеры";
+        }
+      });
+
+      loadMonsters();
+    </script>
+  </body>
+</html>
+

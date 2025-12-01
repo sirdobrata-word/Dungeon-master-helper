@@ -1,0 +1,41 @@
+# Игнорируем ненужные файлы при сборке Docker-образа
+
+# Git
+.git
+.gitignore
+
+# Временные файлы
+*.exe
+*.log
+*.tmp
+/tmp
+
+# Документация (не нужна в контейнере)
+*.md
+!README.md
+
+# Скрипты для локальной разработки
+*.bat
+*.ps1
+*.sh
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Тестовые файлы
+*_test.go
+
+# Postman коллекции
+postman_collection.json
+
+# Скомпилированные бинарники
+dice-service.exe
+server
+
+# OneDrive временные файлы
+~$*
+
+

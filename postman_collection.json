@@ -1,0 +1,1137 @@
+{
+	"info": {
+		"name": "D&D Character Sheet Service",
+		"description": "API для управления персонажами D&D и броска кубиков",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response body is 'ok'\", function () {",
+							"    pm.response.to.have.body(\"ok\");",
+							"});",
+							"",
+							"pm.test(\"Response time is less than 200ms\", function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/healthz",
+					"host": ["{{base_url}}"],
+					"path": ["healthz"]
+				}
+			}
+		},
+		{
+			"name": "Roll Dice - 1d20",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has correct structure\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('expression');",
+							"    pm.expect(jsonData).to.have.property('rolls');",
+							"    pm.expect(jsonData).to.have.property('modifier');",
+							"    pm.expect(jsonData).to.have.property('total');",
+							"});",
+							"",
+							"pm.test(\"Roll result is in valid range (1-20)\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.rolls[0]).to.be.at.least(1);",
+							"    pm.expect(jsonData.rolls[0]).to.be.at.most(20);",
+							"    pm.expect(jsonData.total).to.be.at.least(1);",
+							"    pm.expect(jsonData.total).to.be.at.most(20);",
+							"});",
+							"",
+							"pm.test(\"Expression matches request\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.expression).to.eql(\"1d20\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"expression\": \"1d20\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/roll",
+					"host": ["{{base_url}}"],
+					"path": ["roll"]
+				}
+			}
+		},
+		{
+			"name": "Roll Dice - 2d6 + 3",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has correct structure\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('expression');",
+							"    pm.expect(jsonData).to.have.property('rolls');",
+							"    pm.expect(jsonData).to.have.property('modifier');",
+							"    pm.expect(jsonData).to.have.property('total');",
+							"});",
+							"",
+							"pm.test(\"Roll results are in valid range\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.rolls).to.be.an('array');",
+							"    pm.expect(jsonData.rolls.length).to.eql(2);",
+							"    jsonData.rolls.forEach(roll => {",
+							"        pm.expect(roll).to.be.at.least(1);",
+							"        pm.expect(roll).to.be.at.most(6);",
+							"    });",
+							"});",
+							"",
+							"pm.test(\"Total is calculated correctly\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    const expectedTotal = jsonData.rolls.reduce((a, b) => a + b, 0) + jsonData.modifier;",
+							"    pm.expect(jsonData.total).to.eql(expectedTotal);",
+							"});",
+							"",
+							"pm.test(\"Modifier is 3\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.modifier).to.eql(3);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"expression\": \"2d6 + 3\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/roll",
+					"host": ["{{base_url}}"],
+					"path": ["roll"]
+				}
+			}
+		},
+		{
+			"name": "Create Character",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response has correct structure\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.expect(jsonData).to.have.property('name');",
+							"    pm.expect(jsonData).to.have.property('class');",
+							"    pm.expect(jsonData).to.have.property('race');",
+							"    pm.expect(jsonData).to.have.property('level');",
+							"    pm.expect(jsonData).to.have.property('abilityScores');",
+							"});",
+							"",
+							"pm.test(\"ID is generated and not empty\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.id).to.be.a('string');",
+							"    pm.expect(jsonData.id.length).to.be.above(0);",
+							"});",
+							"",
+							"pm.test(\"Character data matches request\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    const requestBody = pm.request.body.raw;",
+							"    const requestData = JSON.parse(requestBody);",
+							"    ",
+							"    pm.expect(jsonData.name).to.eql(requestData.name);",
+							"    pm.expect(jsonData.class).to.eql(requestData.class);",
+							"    pm.expect(jsonData.race).to.eql(requestData.race);",
+							"    pm.expect(jsonData.level).to.eql(requestData.level);",
+							"});",
+							"",
+							"pm.test(\"Ability scores are present\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    const ab = jsonData.abilityScores;",
+							"    pm.expect(ab).to.have.property('strength');",
+							"    pm.expect(ab).to.have.property('dexterity');",
+							"    pm.expect(ab).to.have.property('constitution');",
+							"    pm.expect(ab).to.have.property('intelligence');",
+							"    pm.expect(ab).to.have.property('wisdom');",
+							"    pm.expect(ab).to.have.property('charisma');",
+							"});",
+							"",
+							"// Save character ID for later use",
+							"if (pm.response.code === 201) {",
+							"    const jsonData = pm.response.json();",
+							"    pm.collectionVariables.set(\"character_id\", jsonData.id);",
+							"    console.log(\"Saved character_id:\", jsonData.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Арагорн\",\n  \"class\": \"Ranger\",\n  \"race\": \"Human\",\n  \"background\": \"Folk Hero\",\n  \"level\": 5,\n  \"abilityScores\": {\n    \"strength\": 16,\n    \"dexterity\": 14,\n    \"constitution\": 15,\n    \"intelligence\": 12,\n    \"wisdom\": 13,\n    \"charisma\": 10\n  },\n  \"proficiencyBonus\": 3,\n  \"armorClass\": 16,\n  \"speed\": 30,\n  \"initiative\": 2,\n  \"maxHitPoints\": 45,\n  \"currentHitPoints\": 45,\n  \"temporaryHitPoints\": 0\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters",
+					"host": ["{{base_url}}"],
+					"path": ["characters"]
+				}
+			}
+		},
+		{
+			"name": "Generate Character",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response has correct structure\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.expect(jsonData).to.have.property('name');",
+							"    pm.expect(jsonData).to.have.property('class');",
+							"    pm.expect(jsonData).to.have.property('race');",
+							"    pm.expect(jsonData).to.have.property('level');",
+							"    pm.expect(jsonData).to.have.property('abilityScores');",
+							"});",
+							"",
+							"pm.test(\"ID is generated\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.id).to.be.a('string');",
+							"    pm.expect(jsonData.id.length).to.be.above(0);",
+							"});",
+							"",
+							"pm.test(\"Ability scores are auto-generated\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    const ab = jsonData.abilityScores;",
+							"    ",
+							"    // Check all abilities are present",
+							"    pm.expect(ab).to.have.property('strength');",
+							"    pm.expect(ab).to.have.property('dexterity');",
+							"    pm.expect(ab).to.have.property('constitution');",
+							"    pm.expect(ab).to.have.property('intelligence');",
+							"    pm.expect(ab).to.have.property('wisdom');",
+							"    pm.expect(ab).to.have.property('charisma');",
+							"    ",
+							"    // Check values are in reasonable range (3-18 for 4d6 drop lowest)",
+							"    Object.values(ab).forEach(score => {",
+							"        pm.expect(score).to.be.at.least(3);",
+							"        pm.expect(score).to.be.at.most(18);",
+							"    });",
+							"});",
+							"",
+							"pm.test(\"Combat stats are calculated\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('armorClass');",
+							"    pm.expect(jsonData).to.have.property('maxHitPoints');",
+							"    pm.expect(jsonData).to.have.property('currentHitPoints');",
+							"    pm.expect(jsonData).to.have.property('proficiencyBonus');",
+							"    pm.expect(jsonData.maxHitPoints).to.be.above(0);",
+							"});",
+							"",
+							"// Save character ID for later use",
+							"if (pm.response.code === 201) {",
+							"    const jsonData = pm.response.json();",
+							"    pm.collectionVariables.set(\"character_id\", jsonData.id);",
+							"    console.log(\"Saved character_id:\", jsonData.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Таша\",\n  \"class\": \"Wizard\",\n  \"race\": \"Human\",\n  \"background\": \"Sage\",\n  \"level\": 5\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters/generate",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "generate"]
+				}
+			}
+		},
+		{
+			"name": "List All Characters",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response is an array\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.be.an('array');",
+							"});",
+							"",
+							"pm.test(\"Each character has required fields\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    if (jsonData.length > 0) {",
+							"        jsonData.forEach(character => {",
+							"            pm.expect(character).to.have.property('id');",
+							"            pm.expect(character).to.have.property('name');",
+							"            pm.expect(character).to.have.property('class');",
+							"            pm.expect(character).to.have.property('race');",
+							"            pm.expect(character).to.have.property('level');",
+							"        });",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"Response time is acceptable\", function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/characters",
+					"host": ["{{base_url}}"],
+					"path": ["characters"]
+				}
+			}
+		},
+		{
+			"name": "Get Character by ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has correct structure\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.expect(jsonData).to.have.property('name');",
+							"    pm.expect(jsonData).to.have.property('class');",
+							"    pm.expect(jsonData).to.have.property('race');",
+							"    pm.expect(jsonData).to.have.property('level');",
+							"    pm.expect(jsonData).to.have.property('abilityScores');",
+							"});",
+							"",
+							"pm.test(\"ID matches requested ID\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    const requestedId = pm.collectionVariables.get(\"character_id\");",
+							"    if (requestedId) {",
+							"        pm.expect(jsonData.id).to.eql(requestedId);",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"Ability scores structure is correct\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    const ab = jsonData.abilityScores;",
+							"    pm.expect(ab).to.have.property('strength');",
+							"    pm.expect(ab).to.have.property('dexterity');",
+							"    pm.expect(ab).to.have.property('constitution');",
+							"    pm.expect(ab).to.have.property('intelligence');",
+							"    pm.expect(ab).to.have.property('wisdom');",
+							"    pm.expect(ab).to.have.property('charisma');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/characters/{{character_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "{{character_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Update Character",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has correct structure\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.expect(jsonData).to.have.property('name');",
+							"    pm.expect(jsonData).to.have.property('abilityScores');",
+							"});",
+							"",
+							"pm.test(\"ID matches requested ID\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    const requestedId = pm.collectionVariables.get(\"character_id\");",
+							"    if (requestedId) {",
+							"        pm.expect(jsonData.id).to.eql(requestedId);",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"Updated values are reflected\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    const requestBody = pm.request.body.raw;",
+							"    const requestData = JSON.parse(requestBody);",
+							"    ",
+							"    if (requestData.abilityScores) {",
+							"        pm.expect(jsonData.abilityScores.strength).to.eql(requestData.abilityScores.strength);",
+							"    }",
+							"    if (requestData.armorClass !== undefined) {",
+							"        pm.expect(jsonData.armorClass).to.eql(requestData.armorClass);",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"Response time is acceptable\", function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(500);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Арагорн\",\n  \"class\": \"Ranger\",\n  \"race\": \"Human\",\n  \"background\": \"Folk Hero\",\n  \"level\": 5,\n  \"abilityScores\": {\n    \"strength\": 18,\n    \"dexterity\": 16,\n    \"constitution\": 15,\n    \"intelligence\": 12,\n    \"wisdom\": 13,\n    \"charisma\": 10\n  },\n  \"proficiencyBonus\": 3,\n  \"armorClass\": 18,\n  \"speed\": 30,\n  \"initiative\": 3,\n  \"maxHitPoints\": 50,\n  \"currentHitPoints\": 50,\n  \"temporaryHitPoints\": 0\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters/{{character_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "{{character_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Get Character - Not Found",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 404\", function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"",
+							"pm.test(\"Error message is present\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.error).to.include('not found');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/characters/nonexistent-id-12345",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "nonexistent-id-12345"]
+				}
+			}
+		},
+		{
+			"name": "Roll Dice - Invalid Expression",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message is present\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"expression\": \"invalid\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/roll",
+					"host": ["{{base_url}}"],
+					"path": ["roll"]
+				}
+			}
+		},
+		{
+			"name": "Roll Dice - Empty Expression",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions empty expression\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('empty');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"expression\": \"   \"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/roll",
+					"host": ["{{base_url}}"],
+					"path": ["roll"]
+				}
+			}
+		},
+		{
+			"name": "Roll Dice - Missing Expression Field",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message is present\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				},
+				"url": {
+					"raw": "{{base_url}}/roll",
+					"host": ["{{base_url}}"],
+					"path": ["roll"]
+				}
+			}
+		},
+		{
+			"name": "Roll Dice - Invalid Method (GET)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 405\", function () {",
+							"    pm.response.to.have.status(405);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/roll",
+					"host": ["{{base_url}}"],
+					"path": ["roll"]
+				}
+			}
+		},
+		{
+			"name": "Create Character - Missing Name",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions name\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('name');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"class\": \"Ranger\",\n  \"race\": \"Human\",\n  \"background\": \"Folk Hero\",\n  \"level\": 5,\n  \"abilityScores\": {\n    \"strength\": 16,\n    \"dexterity\": 14,\n    \"constitution\": 15,\n    \"intelligence\": 12,\n    \"wisdom\": 13,\n    \"charisma\": 10\n  },\n  \"proficiencyBonus\": 3,\n  \"armorClass\": 16,\n  \"speed\": 30,\n  \"initiative\": 2,\n  \"maxHitPoints\": 45,\n  \"currentHitPoints\": 45,\n  \"temporaryHitPoints\": 0\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters",
+					"host": ["{{base_url}}"],
+					"path": ["characters"]
+				}
+			}
+		},
+		{
+			"name": "Create Character - Missing Class",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions class\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('class');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Арагорн\",\n  \"race\": \"Human\",\n  \"background\": \"Folk Hero\",\n  \"level\": 5,\n  \"abilityScores\": {\n    \"strength\": 16,\n    \"dexterity\": 14,\n    \"constitution\": 15,\n    \"intelligence\": 12,\n    \"wisdom\": 13,\n    \"charisma\": 10\n  },\n  \"proficiencyBonus\": 3,\n  \"armorClass\": 16,\n  \"speed\": 30,\n  \"initiative\": 2,\n  \"maxHitPoints\": 45,\n  \"currentHitPoints\": 45,\n  \"temporaryHitPoints\": 0\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters",
+					"host": ["{{base_url}}"],
+					"path": ["characters"]
+				}
+			}
+		},
+		{
+			"name": "Create Character - Invalid Level (0)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions level\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('level');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Арагорн\",\n  \"class\": \"Ranger\",\n  \"race\": \"Human\",\n  \"background\": \"Folk Hero\",\n  \"level\": 0,\n  \"abilityScores\": {\n    \"strength\": 16,\n    \"dexterity\": 14,\n    \"constitution\": 15,\n    \"intelligence\": 12,\n    \"wisdom\": 13,\n    \"charisma\": 10\n  },\n  \"proficiencyBonus\": 3,\n  \"armorClass\": 16,\n  \"speed\": 30,\n  \"initiative\": 2,\n  \"maxHitPoints\": 45,\n  \"currentHitPoints\": 45,\n  \"temporaryHitPoints\": 0\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters",
+					"host": ["{{base_url}}"],
+					"path": ["characters"]
+				}
+			}
+		},
+		{
+			"name": "Create Character - Invalid JSON",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions invalid JSON\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('json');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Арагорн\",\n  \"class\": \"Ranger\"\n  // invalid JSON - missing comma\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters",
+					"host": ["{{base_url}}"],
+					"path": ["characters"]
+				}
+			}
+		},
+		{
+			"name": "Generate Character - Missing Name",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message is present\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"class\": \"Wizard\",\n  \"race\": \"Human\",\n  \"background\": \"Sage\",\n  \"level\": 5\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters/generate",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "generate"]
+				}
+			}
+		},
+		{
+			"name": "Generate Character - Invalid Level (Negative)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message is present\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Таша\",\n  \"class\": \"Wizard\",\n  \"race\": \"Human\",\n  \"background\": \"Sage\",\n  \"level\": -1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters/generate",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "generate"]
+				}
+			}
+		},
+		{
+			"name": "Update Character - Not Found",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 404\", function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions not found\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('not found');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Test\",\n  \"class\": \"Fighter\",\n  \"race\": \"Human\",\n  \"background\": \"Soldier\",\n  \"level\": 1,\n  \"abilityScores\": {\n    \"strength\": 15,\n    \"dexterity\": 13,\n    \"constitution\": 14,\n    \"intelligence\": 10,\n    \"wisdom\": 12,\n    \"charisma\": 11\n  },\n  \"proficiencyBonus\": 2,\n  \"armorClass\": 15,\n  \"speed\": 30,\n  \"initiative\": 1,\n  \"maxHitPoints\": 12,\n  \"currentHitPoints\": 12,\n  \"temporaryHitPoints\": 0\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters/nonexistent-update-id-99999",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "nonexistent-update-id-99999"]
+				}
+			}
+		},
+		{
+			"name": "Update Character - Missing Required Fields",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message is present\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"\",\n  \"class\": \"\",\n  \"level\": 0\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters/{{character_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "{{character_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Update Character - Invalid Method (POST)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 405\", function () {",
+							"    pm.response.to.have.status(405);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Test\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters/{{character_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["characters", "{{character_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Get Character - Missing ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions missing id\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('id');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/characters/",
+					"host": ["{{base_url}}"],
+					"path": ["characters", ""]
+				}
+			}
+		},
+		{
+			"name": "Create Character - Invalid JSON Structure",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions invalid JSON\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "not a json"
+				},
+				"url": {
+					"raw": "{{base_url}}/characters",
+					"host": ["{{base_url}}"],
+					"path": ["characters"]
+				}
+			}
+		},
+		{
+			"name": "Roll Dice - Zero Dice Sides",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message is present\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"expression\": \"1d0\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/roll",
+					"host": ["{{base_url}}"],
+					"path": ["roll"]
+				}
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:9190",
+			"type": "string"
+		},
+		{
+			"key": "character_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  dnd-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dnd-service
+    ports:
+      - "9190:9190"
+    environment:
+      - PORT=9190
+      - DATABASE_URL=postgres://dnd_user:dnd_password@postgres:5432/dnd_service?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: dnd-postgres
+    environment:
+      POSTGRES_DB: dnd_service
+      POSTGRES_USER: dnd_user
+      POSTGRES_PASSWORD: dnd_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dnd_user -d dnd_service"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+

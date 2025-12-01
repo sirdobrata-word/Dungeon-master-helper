@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>D&D Character Creator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>⚔️ D&D Character Creator</h1>
+        <p>Создай героя и управляй персонажами D&D</p>
+
+        <nav style="margin-top: 8px; font-size: 13px">
+          <a href="/ui/index.html" style="color:#d4af37; text-decoration:none; margin-right:16px; text-shadow: 0 0 8px rgba(212,175,55,0.6);">🎲 Создать</a>
+          <a href="/ui/list.html" style="color:#8b7355; text-decoration:none; margin-right:16px;">📜 Персонажи</a>
+          <a href="/ui/monsters.html" style="color:#8b7355; text-decoration:none; margin-right:16px;">👹 Монстры</a>
+          <a href="/ui/companies.html" style="color:#8b7355; text-decoration:none;">⚔ Склад</a>
+        </nav>
+      </header>
+
+      <main class="app-main">
+        <!-- Быстрая кнопка создания компании -->
+        <div style="grid-column: 1 / -1; margin-bottom: 16px; text-align: center;">
+          <button onclick="showCreateCompanyModal()" class="btn primary" style="font-size: 14px; padding: 12px 24px;">
+            ⚔ Создать компанию
+          </button>
+        </div>
+        <!-- Блок броска кубиков -->
+        <section class="card">
+          <h2>Бросок кубиков</h2>
+          
+          <!-- Быстрые кнопки для популярных бросков -->
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: #9ca3af; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.1em;">
+              Быстрые броски:
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              <button type="button" class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="quickRoll('1d20')">1d20</button>
+              <button type="button" class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="quickRoll('2d6')">2d6</button>
+              <button type="button" class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="quickRoll('4d6')">4d6</button>
+              <button type="button" class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="quickRoll('1d100')">1d100</button>
+              <button type="button" class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="quickRoll('3d6')">3d6</button>
+              <button type="button" class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="quickRoll('1d12')">1d12</button>
+              <button type="button" class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="quickRoll('1d8')">1d8</button>
+              <button type="button" class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="quickRoll('1d4')">1d4</button>
+            </div>
+          </div>
+
+          <form id="dice-form" class="form">
+            <div class="form-row">
+              <div class="field" style="flex: 1;">
+                <label for="dice-expression">Выражение</label>
+                <input 
+                  id="dice-expression" 
+                  type="text" 
+                  placeholder="2d6 + 3" 
+                  required
+                  style="width: 100%;"
+                />
+                <small style="color: #9ca3af; font-size: 11px; margin-top: 4px; display: block;">
+                  Примеры: 1d20, 2d6+3, 4d6, 1d20-2
+                </small>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Бросить кубики</button>
+              <span id="dice-status" class="status"></span>
+            </div>
+          </form>
+
+          <div id="dice-result" class="card" style="margin-top: 12px; padding: 12px; display: none; background: rgba(15, 23, 42, 0.95);">
+            <h4 style="margin: 0 0 8px; font-size: 14px;">Результат броска</h4>
+            <div id="dice-result-content"></div>
+          </div>
+        </section>
+
+        <!-- Форма создания персонажа -->
+        <section class="card">
+          <h2>Новый персонаж</h2>
+          <form id="character-form" class="form">
+            <div class="form-row">
+              <div class="field">
+                <label for="name">Имя</label>
+                <input id="name" name="name" type="text" required placeholder="Таша" />
+              </div>
+              <div class="field">
+                <label for="class">Класс</label>
+                <input id="class" name="class" type="text" required placeholder="Wizard" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="race">Раса</label>
+                <input id="race" name="race" type="text" required placeholder="Human" />
+              </div>
+              <div class="field">
+                <label for="background">Предыстория</label>
+                <input
+                  id="background"
+                  name="background"
+                  type="text"
+                  required
+                  placeholder="Sage"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="level">Уровень</label>
+                <select id="level" name="level">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5" selected>5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions" style="flex-wrap: wrap; gap: 8px;">
+              <button type="button" class="btn primary" id="manual-toggle" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
+                ✏️ Ручной режим
+              </button>
+              <button type="submit" class="btn primary" id="submit-btn">
+                ✨ Создать персонажа (авто)
+              </button>
+              <span id="status" class="status"></span>
+            </div>
+
+            <!-- Блок ручного ввода (скрыт по умолчанию) -->
+            <div
+              id="manual-section"
+              class="card"
+              style="margin-top:10px; padding:14px 16px; display:none;"
+            >
+              <h3
+                style="margin:0 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.1em; color:#9ca3af;"
+              >
+                Ручной ввод характеристик и боевых параметров
+              </h3>
+
+              <div class="form-row">
+                <div class="field">
+                  <label for="str-input">STR</label>
+                  <input id="str-input" type="number" min="1" max="30" placeholder="15" />
+                </div>
+                <div class="field">
+                  <label for="dex-input">DEX</label>
+                  <input id="dex-input" type="number" min="1" max="30" placeholder="14" />
+                </div>
+                <div class="field">
+                  <label for="con-input">CON</label>
+                  <input id="con-input" type="number" min="1" max="30" placeholder="14" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="field">
+                  <label for="int-input">INT</label>
+                  <input id="int-input" type="number" min="1" max="30" placeholder="12" />
+                </div>
+                <div class="field">
+                  <label for="wis-input">WIS</label>
+                  <input id="wis-input" type="number" min="1" max="30" placeholder="13" />
+                </div>
+                <div class="field">
+                  <label for="cha-input">CHA</label>
+                  <input id="cha-input" type="number" min="1" max="30" placeholder="10" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="field">
+                  <label for="prof-input">Проф. бонус</label>
+                  <input id="prof-input" type="number" placeholder="3" />
+                </div>
+                <div class="field">
+                  <label for="ac-input">КД (AC)</label>
+                  <input id="ac-input" type="number" placeholder="16" />
+                </div>
+                <div class="field">
+                  <label for="speed-input">Скорость</label>
+                  <input id="speed-input" type="number" placeholder="30" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="field">
+                  <label for="initiative-input">Инициатива</label>
+                  <input id="initiative-input" type="number" placeholder="2" />
+                </div>
+                <div class="field">
+                  <label for="maxhp-input">Макс. хиты</label>
+                  <input id="maxhp-input" type="number" placeholder="45" />
+                </div>
+                <div class="field">
+                  <label for="curhp-input">Текущие хиты</label>
+                  <input id="curhp-input" type="number" placeholder="45" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="field">
+                  <label for="temphp-input">Временные хиты</label>
+                  <input id="temphp-input" type="number" placeholder="0" />
+                </div>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Результат</h2>
+          <div id="result-empty" class="result-empty">
+            Заполни форму и нажми «Создать персонажа», чтобы увидеть лист.
+          </div>
+
+          <div id="result" class="result hidden">
+            <div class="result-header">
+              <div>
+                <h3 id="res-name"></h3>
+                <p id="res-meta" class="result-meta"></p>
+              </div>
+              <div class="result-id">
+                <span class="label">ID</span>
+                <code id="res-id"></code>
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="grid-card">
+                <h4>Характеристики</h4>
+                <ul class="abilities">
+                  <li><span>STR</span><strong id="str-val"></strong></li>
+                  <li><span>DEX</span><strong id="dex-val"></strong></li>
+                  <li><span>CON</span><strong id="con-val"></strong></li>
+                  <li><span>INT</span><strong id="int-val"></strong></li>
+                  <li><span>WIS</span><strong id="wis-val"></strong></li>
+                  <li><span>CHA</span><strong id="cha-val"></strong></li>
+                </ul>
+              </div>
+
+              <div class="grid-card">
+                <h4>Бой</h4>
+                <dl class="stats">
+                  <div>
+                    <dt>КД (AC)</dt>
+                    <dd id="ac-val"></dd>
+                  </div>
+                  <div>
+                    <dt>Хиты</dt>
+                    <dd>
+                      <span id="hp-current-val"></span>/<span id="hp-max-val"></span>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Инициатива</dt>
+                    <dd id="initiative-val"></dd>
+                  </div>
+                  <div>
+                    <dt>Скорость</dt>
+                    <dd><span id="speed-val"></span> ft</dd>
+                  </div>
+                  <div>
+                    <dt>Проф. бонус</dt>
+                    <dd id="prof-val"></dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span>D&D Character Sheet Service · Go backend + HTML UI</span>
+      </footer>
+    </div>
+
+    <!-- Модальное окно создания компании -->
+    <div id="companyModal" class="modal-overlay hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); align-items: center; justify-content: center; z-index: 1000;">
+      <div class="modal" style="background: linear-gradient(135deg, rgba(20, 10, 5, 0.98) 0%, rgba(10, 5, 2, 0.99) 100%); border: 2px solid rgba(139, 0, 0, 0.6); border-radius: 12px; padding: 28px; width: 90%; max-width: 500px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), 0 0 40px rgba(139, 0, 0, 0.3);">
+        <h3 style="margin: 0 0 20px; color: #d4af37; font-size: 22px; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); border-bottom: 2px solid rgba(139, 0, 0, 0.5); padding-bottom: 12px;">Создать компанию</h3>
+        <form id="companyForm" class="form">
+          <div class="field">
+            <label for="companyName">Название компании</label>
+            <input type="text" id="companyName" placeholder="Например: Гильдия Искателей" required>
+          </div>
+          <div class="field">
+            <label for="companyDescription">Описание</label>
+            <textarea id="companyDescription" rows="3" placeholder="Краткое описание группы..."></textarea>
+          </div>
+          <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;">
+            <button type="button" class="btn" onclick="hideCompanyModal()">Отмена</button>
+            <button type="submit" class="btn primary">💾 Создать</button>
+          </div>
+          <span id="companyFormStatus" class="status" style="display: block; margin-top: 12px;"></span>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Диагностика: проверка правильности загрузки
+      (function() {
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        const pathname = window.location.pathname;
+        
+        console.log("=== Диагностика сервиса ===");
+        console.log("Протокол:", protocol);
+        console.log("Хост:", hostname);
+        console.log("Путь:", pathname);
+        console.log("Полный URL:", window.location.href);
+        
+        // Проверка, что страница открыта через http, а не file://
+        if (protocol === "file:") {
+          const errorMsg = "⚠️ ОШИБКА: Страница открыта как локальный файл!\n\n" +
+            "Правильно: http://localhost:9190/ui/index.html\n" +
+            "Неправильно: file:///C:/...\n\n" +
+            "Запусти сервер и открой страницу через браузер с адресом http://localhost:9190/ui/index.html";
+          alert(errorMsg);
+          console.error(errorMsg);
+        }
+        
+        // Проверка доступности сервера
+        fetch("/healthz")
+          .then(res => {
+            if (res.ok) {
+              console.log("✅ Сервер доступен");
+            } else {
+              console.warn("⚠️ Сервер отвечает, но статус:", res.status);
+            }
+          })
+          .catch(err => {
+            console.error("❌ Сервер недоступен:", err);
+            console.error("Убедитесь, что сервер запущен: go run cmd/server/main.go");
+          });
+      })();
+      
+      // Бросок кубиков
+      const diceForm = document.getElementById("dice-form");
+      const diceStatus = document.getElementById("dice-status");
+      const diceResult = document.getElementById("dice-result");
+      const diceResultContent = document.getElementById("dice-result-content");
+      const diceExpressionInput = document.getElementById("dice-expression");
+
+      // Функция для быстрого броска
+      async function quickRoll(expression) {
+        diceExpressionInput.value = expression;
+        diceStatus.textContent = "Бросаю кубики...";
+        diceStatus.classList.remove("error");
+        diceResult.style.display = "none";
+
+        try {
+          const res = await fetch("/roll", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ expression }),
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            const msg = (data && data.error) || "Ошибка броска кубиков";
+            diceStatus.textContent = msg;
+            diceStatus.classList.add("error");
+            return;
+          }
+
+          diceStatus.textContent = "Успешно";
+          diceStatus.classList.remove("error");
+
+          // Отображаем результат
+          diceResult.style.display = "block";
+          diceResultContent.innerHTML = `
+            <div style="margin-bottom: 6px;">
+              <strong>Выражение:</strong> ${data.expression}
+            </div>
+            <div style="margin-bottom: 6px;">
+              <strong>Броски:</strong> [${data.rolls.join(", ")}]
+            </div>
+            ${data.modifier !== 0 ? `<div style="margin-bottom: 6px;"><strong>Модификатор:</strong> ${data.modifier > 0 ? "+" : ""}${data.modifier}</div>` : ""}
+            <div style="font-size: 18px; font-weight: 600; color: #a5b4fc;">
+              <strong>Итого:</strong> ${data.total}
+            </div>
+          `;
+        } catch (err) {
+          console.error(err);
+          diceStatus.textContent = "Сетевой сбой";
+          diceStatus.classList.add("error");
+        }
+      }
+
+      diceForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        diceStatus.textContent = "Бросаю кубики...";
+        diceStatus.classList.remove("error");
+        diceResult.style.display = "none";
+
+        const expression = document.getElementById("dice-expression").value.trim();
+
+        try {
+          const res = await fetch("/roll", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ expression }),
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            const msg = (data && data.error) || "Ошибка броска кубиков";
+            diceStatus.textContent = msg;
+            diceStatus.classList.add("error");
+            return;
+          }
+
+          diceStatus.textContent = "Успешно";
+          diceStatus.classList.remove("error");
+
+          // Отображаем результат
+          diceResult.style.display = "block";
+          diceResultContent.innerHTML = `
+            <div style="margin-bottom: 6px;">
+              <strong>Выражение:</strong> ${data.expression}
+            </div>
+            <div style="margin-bottom: 6px;">
+              <strong>Броски:</strong> [${data.rolls.join(", ")}]
+            </div>
+            ${data.modifier !== 0 ? `<div style="margin-bottom: 6px;"><strong>Модификатор:</strong> ${data.modifier > 0 ? "+" : ""}${data.modifier}</div>` : ""}
+            <div style="font-size: 18px; font-weight: 600; color: #a5b4fc;">
+              <strong>Итого:</strong> ${data.total}
+            </div>
+          `;
+        } catch (err) {
+          console.error(err);
+          diceStatus.textContent = "Сетевой сбой";
+          diceStatus.classList.add("error");
+        }
+      });
+
+      // Создание персонажа
+      const form = document.getElementById("character-form");
+      const statusEl = document.getElementById("status");
+      const resultEmpty = document.getElementById("result-empty");
+      const result = document.getElementById("result");
+      const manualSection = document.getElementById("manual-section");
+      const submitBtn = document.getElementById("submit-btn");
+      const manualToggle = document.getElementById("manual-toggle");
+
+      let isManual = false;
+
+      manualToggle.addEventListener("click", () => {
+        isManual = !isManual;
+        manualSection.style.display = isManual ? "block" : "none";
+        if (isManual) {
+          manualToggle.textContent = "❌ Выключить ручной режим";
+          manualToggle.style.background = "linear-gradient(135deg, #ef4444, #dc2626)";
+          submitBtn.textContent = "💾 Создать персонажа (ручной)";
+        } else {
+          manualToggle.textContent = "✏️ Ручной режим";
+          manualToggle.style.background = "linear-gradient(135deg, #8b5cf6, #6366f1)";
+          submitBtn.textContent = "✨ Создать персонажа (авто)";
+        }
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        statusEl.textContent = "Отправка запроса...";
+        statusEl.classList.remove("error");
+        submitBtn.disabled = true;
+
+        const commonPayload = {
+          name: form.name.value.trim(),
+          class: form.class.value.trim(),
+          race: form.race.value.trim(),
+          background: form.background.value.trim(),
+          level: Number(form.level.value),
+        };
+
+        let url = "/characters/generate";
+        let payload = commonPayload;
+
+        if (isManual) {
+          url = "/characters";
+          payload = {
+            ...commonPayload,
+            abilityScores: {
+              strength: numberOrZero("str-input"),
+              dexterity: numberOrZero("dex-input"),
+              constitution: numberOrZero("con-input"),
+              intelligence: numberOrZero("int-input"),
+              wisdom: numberOrZero("wis-input"),
+              charisma: numberOrZero("cha-input"),
+            },
+            proficiencyBonus: numberOrZero("prof-input"),
+            armorClass: numberOrZero("ac-input"),
+            speed: numberOrZero("speed-input"),
+            initiative: numberOrZero("initiative-input"),
+            maxHitPoints: numberOrZero("maxhp-input"),
+            currentHitPoints: numberOrZero("curhp-input"),
+            temporaryHitPoints: numberOrZero("temphp-input"),
+          };
+        }
+
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            const msg = data && data.error ? data.error : "Ошибка создания персонажа";
+            statusEl.textContent = msg;
+            statusEl.classList.add("error");
+            return;
+          }
+
+          statusEl.textContent = "Персонаж успешно создан";
+          statusEl.classList.remove("error");
+          showResult(data);
+        } catch (err) {
+          console.error(err);
+          statusEl.textContent = "Сетевой сбой. Проверь соединение или лог сервера.";
+          statusEl.classList.add("error");
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+
+      function numberOrZero(id) {
+        const el = document.getElementById(id);
+        const v = el.value.trim();
+        if (v === "") return 0;
+        const num = Number(v);
+        return Number.isNaN(num) ? 0 : num;
+      }
+
+      function showResult(data) {
+        resultEmpty.classList.add("hidden");
+        result.classList.remove("hidden");
+
+        document.getElementById("res-name").textContent = data.name;
+        document.getElementById(
+          "res-meta"
+        ).textContent = `${data.race} · ${data.class} · уровень ${data.level}`;
+        document.getElementById("res-id").textContent = data.id;
+
+        const ab = data.abilityScores || {};
+        document.getElementById("str-val").textContent = ab.strength ?? "-";
+        document.getElementById("dex-val").textContent = ab.dexterity ?? "-";
+        document.getElementById("con-val").textContent = ab.constitution ?? "-";
+        document.getElementById("int-val").textContent = ab.intelligence ?? "-";
+        document.getElementById("wis-val").textContent = ab.wisdom ?? "-";
+        document.getElementById("cha-val").textContent = ab.charisma ?? "-";
+
+        document.getElementById("ac-val").textContent = data.armorClass ?? "-";
+        document.getElementById("hp-current-val").textContent =
+          data.currentHitPoints ?? "-";
+        document.getElementById("hp-max-val").textContent =
+          data.maxHitPoints ?? "-";
+        document.getElementById("initiative-val").textContent =
+          data.initiative ?? "-";
+        document.getElementById("speed-val").textContent = data.speed ?? "-";
+        document.getElementById("prof-val").textContent =
+          data.proficiencyBonus ?? "-";
+      }
+
+      // Функции для работы с компанией
+      async function showCreateCompanyModal() {
+        // Проверяем доступность сервера перед открытием модального окна
+        try {
+          const healthCheck = await fetch("/healthz").catch(() => null);
+          if (!healthCheck || !healthCheck.ok) {
+            alert("⚠️ Сервер недоступен!\n\nУбедитесь, что сервер запущен на http://localhost:9190\n\nЗапустите сервер командой:\ngo run cmd/server/main.go");
+            return;
+          }
+        } catch (err) {
+          alert("⚠️ Не удалось подключиться к серверу!\n\nУбедитесь, что сервер запущен на http://localhost:9190");
+          return;
+        }
+        
+        const modal = document.getElementById("companyModal");
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+        document.getElementById("companyName").value = "";
+        document.getElementById("companyDescription").value = "";
+        document.getElementById("companyFormStatus").textContent = "";
+        document.getElementById("companyFormStatus").classList.remove("error");
+      }
+
+      function hideCompanyModal() {
+        const modal = document.getElementById("companyModal");
+        modal.classList.add("hidden");
+        modal.style.display = "none";
+      }
+
+      // Обработчик формы создания компании
+      document.getElementById("companyForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const statusEl = document.getElementById("companyFormStatus");
+        const originalText = submitBtn.textContent;
+        
+        submitBtn.textContent = "Создание...";
+        submitBtn.disabled = true;
+        statusEl.textContent = "";
+        statusEl.classList.remove("error");
+        
+        const name = document.getElementById("companyName").value.trim();
+        const description = document.getElementById("companyDescription").value.trim();
+        
+        if (!name) {
+          statusEl.textContent = "Введите название компании!";
+          statusEl.classList.add("error");
+          submitBtn.textContent = originalText;
+          submitBtn.disabled = false;
+          return;
+        }
+        
+        try {
+          const payload = { name, description };
+          console.log("Отправка запроса на создание компании:", payload);
+          
+          const res = await fetch("/companies", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          }).catch(fetchError => {
+            console.error("Ошибка сети при запросе:", fetchError);
+            throw new Error("Не удалось подключиться к серверу. Убедитесь, что сервер запущен на http://localhost:9190");
+          });
+          
+          console.log("Статус ответа:", res.status, res.statusText);
+          
+          // Клонируем ответ для чтения текста при ошибке
+          const resClone = res.clone();
+          let result;
+          
+          try {
+            result = await res.json();
+          } catch (parseErr) {
+            // Если не удалось распарсить JSON, читаем как текст
+            const text = await resClone.text();
+            console.error("Ошибка парсинга JSON:", text);
+            throw new Error(`Сервер вернул ошибку: ${res.status} ${res.statusText}. ${text}`);
+          }
+          
+          console.log("Ответ сервера:", result);
+          
+          if (!res.ok) {
+            const errorMsg = result.error || result.message || `Ошибка ${res.status}: ${res.statusText}`;
+            throw new Error(errorMsg);
+          }
+          
+          statusEl.textContent = "✅ Компания создана! Переход на страницу склада...";
+          statusEl.classList.remove("error");
+          
+          setTimeout(() => {
+            // Добавляем параметр refresh для обновления списка
+            window.location.href = "/ui/companies.html?refresh=true";
+          }, 1500);
+        } catch (err) {
+          console.error("Ошибка создания компании:", err);
+          let errorMessage = err.message;
+          
+          // Более понятные сообщения об ошибках
+          if (errorMessage.includes("Failed to fetch") || errorMessage.includes("NetworkError")) {
+            errorMessage = "Не удалось подключиться к серверу. Убедитесь, что сервер запущен на http://localhost:9190";
+          } else if (errorMessage.includes("404")) {
+            errorMessage = "Сервер не найден. Проверьте, что сервер запущен и доступен на http://localhost:9190";
+          }
+          
+          statusEl.textContent = "Ошибка: " + errorMessage;
+          statusEl.classList.add("error");
+          submitBtn.textContent = originalText;
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
