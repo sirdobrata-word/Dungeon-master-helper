@@ -66,3 +66,5 @@ type AddMonsterRequest struct {
 
 
 
+
+

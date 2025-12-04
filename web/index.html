@@ -127,6 +127,36 @@
                   <option value="10">10</option>
                 </select>
               </div>
+              <div class="field">
+                <label for="alignment">Мировоззрение</label>
+                <select id="alignment" name="alignment">
+                  <option value="">Не выбрано</option>
+                  <option value="Законно-добрый">Законно-добрый</option>
+                  <option value="Нейтрально-добрый">Нейтрально-добрый</option>
+                  <option value="Хаотично-добрый">Хаотично-добрый</option>
+                  <option value="Законно-нейтральный">Законно-нейтральный</option>
+                  <option value="Истинно-нейтральный" selected>Истинно-нейтральный</option>
+                  <option value="Хаотично-нейтральный">Хаотично-нейтральный</option>
+                  <option value="Законно-злой">Законно-злой</option>
+                  <option value="Нейтрально-злой">Нейтрально-злой</option>
+                  <option value="Хаотично-злой">Хаотично-злой</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field" style="flex: 1;">
+                <label for="skills">Навыки (через запятую)</label>
+                <input
+                  id="skills"
+                  name="skills"
+                  type="text"
+                  placeholder="Восприятие, Скрытность, Акробатика"
+                />
+                <small style="color: #9ca3af; font-size: 11px; margin-top: 4px; display: block;">
+                  Примеры: Акробатика, Анализ, Атлетика, Восприятие, Выживание, Выступление, Запугивание, История, Ловкость рук, Магия, Медицина, Обман, Природа, Проницательность, Религия, Скрытность, Убеждение, Уход за животными
+                </small>
+              </div>
             </div>
 
             <div class="form-actions" style="flex-wrap: wrap; gap: 8px;">
@@ -239,6 +269,12 @@
               </div>
             </div>
 
+            <!-- Мировоззрение -->
+            <div id="res-alignment-block" class="grid-card" style="margin-bottom: 12px; display: none;">
+              <h4>Мировоззрение</h4>
+              <div id="res-alignment" style="font-size: 16px; color: #d4af37; font-weight: 600;"></div>
+            </div>
+
             <div class="grid">
               <div class="grid-card">
                 <h4>Характеристики</h4>
@@ -279,6 +315,12 @@
                   </div>
                 </dl>
               </div>
+            </div>
+
+            <!-- Навыки -->
+            <div id="res-skills-block" class="grid-card" style="margin-top: 12px; display: none;">
+              <h4>Навыки</h4>
+              <div id="res-skills" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
             </div>
           </div>
         </section>
@@ -486,12 +528,18 @@
         statusEl.classList.remove("error");
         submitBtn.disabled = true;
 
+        // Парсим навыки из текстового поля
+        const skillsRaw = form.skills.value.trim();
+        const skills = skillsRaw ? skillsRaw.split(',').map(s => s.trim()).filter(s => s) : [];
+
         const commonPayload = {
           name: form.name.value.trim(),
           class: form.class.value.trim(),
           race: form.race.value.trim(),
           background: form.background.value.trim(),
           level: Number(form.level.value),
+          alignment: form.alignment.value,
+          skills: skills,
         };
 
         let url = "/characters/generate";
@@ -567,6 +615,16 @@
         ).textContent = `${data.race} · ${data.class} · уровень ${data.level}`;
         document.getElementById("res-id").textContent = data.id;
 
+        // Мировоззрение
+        const alignmentBlock = document.getElementById("res-alignment-block");
+        const alignmentEl = document.getElementById("res-alignment");
+        if (data.alignment) {
+          alignmentBlock.style.display = "block";
+          alignmentEl.textContent = data.alignment;
+        } else {
+          alignmentBlock.style.display = "none";
+        }
+
         const ab = data.abilityScores || {};
         document.getElementById("str-val").textContent = ab.strength ?? "-";
         document.getElementById("dex-val").textContent = ab.dexterity ?? "-";
@@ -585,6 +643,19 @@
         document.getElementById("speed-val").textContent = data.speed ?? "-";
         document.getElementById("prof-val").textContent =
           data.proficiencyBonus ?? "-";
+
+        // Навыки
+        const skillsBlock = document.getElementById("res-skills-block");
+        const skillsEl = document.getElementById("res-skills");
+        const skills = data.skills || [];
+        if (skills.length > 0) {
+          skillsBlock.style.display = "block";
+          skillsEl.innerHTML = skills.map(skill => 
+            `<span style="background: rgba(139, 0, 0, 0.3); border: 1px solid rgba(139, 0, 0, 0.5); border-radius: 4px; padding: 4px 10px; font-size: 13px; color: #d4af37;">${skill}</span>`
+          ).join('');
+        } else {
+          skillsBlock.style.display = "none";
+        }
       }
 
       // Функции для работы с компанией

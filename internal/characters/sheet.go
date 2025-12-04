@@ -20,6 +20,7 @@ type CharacterSheet struct {
 	Race               string        `json:"race"`
 	Background         string        `json:"background"`
 	Level              int           `json:"level"`
+	Alignment          string        `json:"alignment"`
 	AbilityScores      AbilityScores `json:"abilityScores"`
 	ProficiencyBonus   int           `json:"proficiencyBonus"`
 	ArmorClass         int           `json:"armorClass"`
@@ -28,6 +29,8 @@ type CharacterSheet struct {
 	MaxHitPoints       int           `json:"maxHitPoints"`
 	CurrentHitPoints   int           `json:"currentHitPoints"`
 	TemporaryHitPoints int           `json:"temporaryHitPoints"`
+	Skills             []string      `json:"skills"`
+	Items              []string      `json:"items"`
 }
 
 func (c CharacterSheet) Validate() error {

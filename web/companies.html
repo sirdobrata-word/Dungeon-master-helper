@@ -230,6 +230,10 @@
       z-index: 1000;
     }
     
+    .modal-overlay.hidden {
+      display: none !important;
+    }
+    
     .modal {
       background: linear-gradient(135deg, rgba(20, 10, 5, 0.98) 0%, rgba(10, 5, 2, 0.99) 100%);
       border: 2px solid rgba(139, 0, 0, 0.6);
@@ -240,10 +244,39 @@
       box-shadow: 
         0 10px 40px rgba(0, 0, 0, 0.9),
         0 0 40px rgba(139, 0, 0, 0.3);
+      position: relative;
+    }
+    
+    .modal-close {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #8b0000, #5a0000);
+      border: 2px solid #d4af37;
+      border-radius: 50%;
+      color: #d4af37;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      z-index: 1001;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+    }
+    
+    .modal-close:hover {
+      background: linear-gradient(135deg, #a00000, #6a0000);
+      transform: scale(1.15);
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
     }
     
     .modal h3 {
       margin: 0 0 20px;
+      padding-right: 40px;
       color: #d4af37;
       font-size: 22px;
       text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
@@ -273,6 +306,25 @@
     .no-companies p {
       font-size: 16px;
       font-style: italic;
+    }
+    
+    /* Стилизация скроллбара для списка персонажей */
+    #characterCheckboxes::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    #characterCheckboxes::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 3px;
+    }
+    
+    #characterCheckboxes::-webkit-scrollbar-thumb {
+      background: rgba(139, 0, 0, 0.5);
+      border-radius: 3px;
+    }
+    
+    #characterCheckboxes::-webkit-scrollbar-thumb:hover {
+      background: rgba(139, 0, 0, 0.7);
     }
   </style>
 </head>
@@ -318,8 +370,9 @@
   </div>
 
   <!-- Модальное окно создания/редактирования -->
-  <div id="companyModal" class="modal-overlay hidden">
+  <div id="companyModal" class="modal-overlay hidden" onclick="closeModalOnOverlay(event)">
     <div class="modal">
+      <button type="button" class="modal-close" onclick="console.log('Клик по X!'); hideModal();" title="Закрыть">✕</button>
       <h3 id="modalTitle">Создать компанию</h3>
       <form id="companyForm" class="form">
         <input type="hidden" id="companyId">
@@ -331,8 +384,21 @@
           <label for="companyDescription">Описание</label>
           <textarea id="companyDescription" rows="3" placeholder="Краткое описание группы..."></textarea>
         </div>
+        
+        <!-- Секция добавления персонажей -->
+        <div id="charactersSection" class="field" style="display: none;">
+          <label>Добавить персонажей</label>
+          <div id="characterCheckboxes" style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 10px; border: 1px solid rgba(139,0,0,0.4);">
+            <div style="color: #5a4a3a; font-style: italic; font-size: 12px;">Загрузка...</div>
+          </div>
+          <div style="margin-top: 8px; display: flex; gap: 8px;">
+            <button type="button" class="btn" onclick="selectAllCharacters()" style="padding: 6px 12px; font-size: 11px;">✓ Выбрать все</button>
+            <button type="button" class="btn" onclick="deselectAllCharacters()" style="padding: 6px 12px; font-size: 11px;">✕ Снять все</button>
+          </div>
+        </div>
+        
         <div class="modal-actions">
-          <button type="button" class="btn" onclick="hideModal()">Отмена</button>
+          <button type="button" class="btn" onclick="console.log('Клик по Отмена!'); hideModal();">Отмена</button>
           <button type="submit" class="btn primary">💾 Сохранить</button>
         </div>
       </form>
@@ -473,7 +539,51 @@
       document.getElementById('companyId').value = '';
       document.getElementById('companyName').value = '';
       document.getElementById('companyDescription').value = '';
+      document.getElementById('charactersSection').style.display = 'block';
+      renderCharacterCheckboxes([]);
       document.getElementById('companyModal').classList.remove('hidden');
+    }
+    
+    // Рендер чекбоксов для выбора персонажей
+    function renderCharacterCheckboxes(selectedIds = []) {
+      const container = document.getElementById('characterCheckboxes');
+      
+      if (!characters || characters.length === 0) {
+        container.innerHTML = `
+          <div style="color: #5a4a3a; font-style: italic; font-size: 12px; text-align: center; padding: 10px;">
+            Нет доступных персонажей.<br>
+            <a href="index.html" style="color: #d4af37;">Создайте персонажа</a>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = characters.map(char => `
+        <label style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" 
+               onmouseover="this.style.background='rgba(139,0,0,0.2)'" 
+               onmouseout="this.style.background='transparent'">
+          <input type="checkbox" class="char-checkbox" value="${char.id}" ${selectedIds.includes(char.id) ? 'checked' : ''} 
+                 style="accent-color: #8b0000; width: 16px; height: 16px;">
+          <span style="color: #d4af37; font-size: 13px;">${escapeHtml(char.name)}</span>
+          <span style="color: #5a4a3a; font-size: 11px; font-style: italic;">${char.race} ${char.class}</span>
+        </label>
+      `).join('');
+    }
+    
+    // Выбрать всех персонажей
+    function selectAllCharacters() {
+      document.querySelectorAll('.char-checkbox').forEach(cb => cb.checked = true);
+    }
+    
+    // Снять выбор со всех персонажей
+    function deselectAllCharacters() {
+      document.querySelectorAll('.char-checkbox').forEach(cb => cb.checked = false);
+    }
+    
+    // Получить выбранных персонажей
+    function getSelectedCharacterIds() {
+      const checkboxes = document.querySelectorAll('.char-checkbox:checked');
+      return Array.from(checkboxes).map(cb => cb.value);
     }
 
     // Редактирование компании
@@ -486,6 +596,12 @@
         document.getElementById('companyId').value = comp.id;
         document.getElementById('companyName').value = comp.name;
         document.getElementById('companyDescription').value = comp.description || '';
+        document.getElementById('charactersSection').style.display = 'block';
+        
+        // Получить ID персонажей в компании
+        const selectedCharIds = comp.characters?.map(c => c.id) || [];
+        renderCharacterCheckboxes(selectedCharIds);
+        
         document.getElementById('companyModal').classList.remove('hidden');
       } catch (err) {
         alert('Ошибка загрузки компании');
@@ -494,8 +610,32 @@
 
     // Скрыть модальное окно
     function hideModal() {
-      document.getElementById('companyModal').classList.add('hidden');
+      console.log('hideModal вызван!');
+      const modal = document.getElementById('companyModal');
+      console.log('Модальное окно:', modal);
+      console.log('Текущие классы:', modal.className);
+      modal.classList.add('hidden');
+      console.log('Классы после добавления hidden:', modal.className);
     }
+    
+    // Закрыть модальное окно при клике на затемнённый фон
+    function closeModalOnOverlay(event) {
+      console.log('Клик по overlay, target:', event.target, 'currentTarget:', event.currentTarget);
+      if (event.target === event.currentTarget) {
+        console.log('Закрываем по клику на фон');
+        hideModal();
+      }
+    }
+    
+    // Закрытие по Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('companyModal');
+        if (!modal.classList.contains('hidden')) {
+          hideModal();
+        }
+      }
+    });
 
     // Сохранение компании
     document.getElementById('companyForm').addEventListener('submit', async (e) => {
@@ -509,6 +649,7 @@
       const id = document.getElementById('companyId').value;
       const name = document.getElementById('companyName').value.trim();
       const description = document.getElementById('companyDescription').value.trim();
+      const selectedCharIds = getSelectedCharacterIds();
       
       if (!name) {
         alert('Введите название компании!');
@@ -553,6 +694,13 @@
           const errorMsg = result.error || result.message || `Ошибка ${res.status}: ${res.statusText}`;
           throw new Error(errorMsg);
         }
+        
+        const companyId = result.id || id;
+        
+        // Синхронизируем персонажей компании
+        if (companyId && selectedCharIds.length > 0) {
+          await syncCompanyCharacters(companyId, selectedCharIds);
+        }
 
         hideModal();
         statusEl.textContent = id ? 'Компания обновлена!' : 'Компания создана!';
@@ -579,6 +727,40 @@
         submitBtn.disabled = false;
       }
     });
+    
+    // Синхронизация персонажей компании
+    async function syncCompanyCharacters(companyId, selectedCharIds) {
+      try {
+        // Получить текущее состояние компании
+        const compRes = await fetch(`${API_BASE}/companies/${companyId}`);
+        const comp = await compRes.json();
+        const currentCharIds = comp.characters?.map(c => c.id) || [];
+        
+        // Определить, каких персонажей добавить и удалить
+        const toAdd = selectedCharIds.filter(id => !currentCharIds.includes(id));
+        const toRemove = currentCharIds.filter(id => !selectedCharIds.includes(id));
+        
+        // Добавить новых персонажей
+        for (const charId of toAdd) {
+          await fetch(`${API_BASE}/companies/${companyId}/characters`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ characterId: charId })
+          });
+        }
+        
+        // Удалить убранных персонажей
+        for (const charId of toRemove) {
+          await fetch(`${API_BASE}/companies/${companyId}/characters/${charId}`, {
+            method: 'DELETE'
+          });
+        }
+        
+        console.log('Персонажи синхронизированы. Добавлено:', toAdd.length, 'Удалено:', toRemove.length);
+      } catch (err) {
+        console.error('Ошибка синхронизации персонажей:', err);
+      }
+    }
 
     // Удаление компании
     async function deleteCompany(id) {

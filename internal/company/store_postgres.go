@@ -12,7 +12,7 @@ import (
 )
 
 // PostgresStore реализует Store для компаний в PostgreSQL.
-// Схема: таблица companies(id text primary key, data jsonb not null)
+// Схема: таблица companies с отдельными колонками для поиска
 type PostgresStore struct {
 	db *sql.DB
 }
@@ -23,11 +23,45 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 	const createTable = `
 CREATE TABLE IF NOT EXISTS companies (
 	id   TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	created_at TIMESTAMP NOT NULL,
+	updated_at TIMESTAMP NOT NULL,
 	data JSONB NOT NULL
 );`
 
 	if _, err := db.Exec(createTable); err != nil {
 		panic(fmt.Errorf("failed to create companies table: %w", err))
+	}
+
+	// Миграция: добавляем колонки если их нет
+	const migrateTable = `
+DO $$ 
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'companies' AND column_name = 'name') THEN
+		ALTER TABLE companies ADD COLUMN name TEXT;
+		ALTER TABLE companies ADD COLUMN created_at TIMESTAMP;
+		ALTER TABLE companies ADD COLUMN updated_at TIMESTAMP;
+		
+		-- Заполняем новые колонки из JSON
+		UPDATE companies SET 
+			name = data->>'name',
+			created_at = (data->>'createdAt')::TIMESTAMP,
+			updated_at = (data->>'updatedAt')::TIMESTAMP
+		WHERE name IS NULL;
+		
+		-- Делаем колонки NOT NULL
+		ALTER TABLE companies ALTER COLUMN name SET NOT NULL;
+		ALTER TABLE companies ALTER COLUMN created_at SET NOT NULL;
+		ALTER TABLE companies ALTER COLUMN updated_at SET NOT NULL;
+		
+		-- Создаём индексы для поиска
+		CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(name);
+		CREATE INDEX IF NOT EXISTS idx_companies_created_at ON companies(created_at);
+	END IF;
+END $$;`
+
+	if _, err := db.Exec(migrateTable); err != nil {
+		panic(fmt.Errorf("failed to migrate companies table: %w", err))
 	}
 
 	return &PostgresStore{db: db}
@@ -50,8 +84,8 @@ func (s *PostgresStore) Create(c Company) (Company, error) {
 		return Company{}, fmt.Errorf("failed to marshal company: %w", err)
 	}
 
-	const insertQuery = `INSERT INTO companies (id, data) VALUES ($1, $2::jsonb);`
-	if _, err := s.db.Exec(insertQuery, c.ID, data); err != nil {
+	const insertQuery = `INSERT INTO companies (id, name, created_at, updated_at, data) VALUES ($1, $2, $3, $4, $5::jsonb);`
+	if _, err := s.db.Exec(insertQuery, c.ID, c.Name, c.CreatedAt, c.UpdatedAt, data); err != nil {
 		return Company{}, fmt.Errorf("failed to insert company: %w", err)
 	}
 
@@ -127,8 +161,8 @@ func (s *PostgresStore) Update(c Company) error {
 		return fmt.Errorf("failed to marshal company: %w", err)
 	}
 
-	const updateQuery = `UPDATE companies SET data = $2::jsonb WHERE id = $1;`
-	res, err := s.db.Exec(updateQuery, c.ID, data)
+	const updateQuery = `UPDATE companies SET name = $2, updated_at = $3, data = $4::jsonb WHERE id = $1;`
+	res, err := s.db.Exec(updateQuery, c.ID, c.Name, c.UpdatedAt, data)
 	if err != nil {
 		return fmt.Errorf("failed to update company: %w", err)
 	}

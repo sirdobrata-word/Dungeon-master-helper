@@ -49,3 +49,5 @@ func (m Monster) Validate() error {
 
 
 
+
+

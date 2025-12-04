@@ -10,7 +10,7 @@ import (
 // - бросает характеристики 4d6 drop lowest
 // - расставляет их по порядку STR, DEX, CON, INT, WIS, CHA
 // - считает модификаторы, проф.бонус и базовые боевые поля.
-func GenerateCharacterSheet(name, class, race, background string, level int) (CharacterSheet, error) {
+func GenerateCharacterSheet(name, class, race, background, alignment string, level int, skills []string) (CharacterSheet, error) {
 	if level <= 0 {
 		level = 1
 	}
@@ -41,6 +41,7 @@ func GenerateCharacterSheet(name, class, race, background string, level int) (Ch
 		Race:               race,
 		Background:         background,
 		Level:              level,
+		Alignment:          alignment,
 		AbilityScores:      abilities,
 		ProficiencyBonus:   prof,
 		ArmorClass:         10 + dexMod,
@@ -49,6 +50,7 @@ func GenerateCharacterSheet(name, class, race, background string, level int) (Ch
 		MaxHitPoints:       maxHP,
 		CurrentHitPoints:   maxHP,
 		TemporaryHitPoints: 0,
+		Skills:             skills,
 	}
 
 	if err := sheet.Validate(); err != nil {

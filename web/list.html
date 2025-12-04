@@ -110,7 +110,7 @@
           meta.style.color = "#9ca3af";
           meta.textContent = `${ch.race || "?"} · ${ch.class || "?"} · уровень ${
             ch.level || "?"
-          }`;
+          }${ch.alignment ? ` · ${ch.alignment}` : ""}`;
 
           left.appendChild(name);
           left.appendChild(meta);
@@ -169,8 +169,27 @@
             const hpCurrent = character.currentHitPoints ?? 0;
             const hpMax = character.maxHitPoints ?? 0;
 
+            const skills = character.skills || [];
+            const items = character.items || [];
+            const alignment = character.alignment || "";
+
             if (editable) {
               details.innerHTML = `
+                <div style="margin-bottom:4px; color:#9ca3af;">Мировоззрение</div>
+                <div class="editable-row" style="margin-bottom:8px;">
+                  <select data-field="alignment" style="padding:6px 10px; border-radius:6px; border:1px solid #4b5563; background:#020617; color:#e5e7eb; font-size:12px; width:200px;">
+                    <option value="" ${!alignment ? 'selected' : ''}>Не выбрано</option>
+                    <option value="Законно-добрый" ${alignment === 'Законно-добрый' ? 'selected' : ''}>Законно-добрый</option>
+                    <option value="Нейтрально-добрый" ${alignment === 'Нейтрально-добрый' ? 'selected' : ''}>Нейтрально-добрый</option>
+                    <option value="Хаотично-добрый" ${alignment === 'Хаотично-добрый' ? 'selected' : ''}>Хаотично-добрый</option>
+                    <option value="Законно-нейтральный" ${alignment === 'Законно-нейтральный' ? 'selected' : ''}>Законно-нейтральный</option>
+                    <option value="Истинно-нейтральный" ${alignment === 'Истинно-нейтральный' ? 'selected' : ''}>Истинно-нейтральный</option>
+                    <option value="Хаотично-нейтральный" ${alignment === 'Хаотично-нейтральный' ? 'selected' : ''}>Хаотично-нейтральный</option>
+                    <option value="Законно-злой" ${alignment === 'Законно-злой' ? 'selected' : ''}>Законно-злой</option>
+                    <option value="Нейтрально-злой" ${alignment === 'Нейтрально-злой' ? 'selected' : ''}>Нейтрально-злой</option>
+                    <option value="Хаотично-злой" ${alignment === 'Хаотично-злой' ? 'selected' : ''}>Хаотично-злой</option>
+                  </select>
+                </div>
                 <div style="margin-bottom:4px; color:#9ca3af;">Характеристики</div>
                 <div class="editable-row" style="display:flex; flex-wrap:wrap; gap:6px 10px; margin-bottom:6px;">
                   ${editableInput("str", "STR", ab.strength)}
@@ -189,9 +208,18 @@
                   ${editableInput("speed", "Speed", character.speed)}
                   ${editableInput("prof", "Prof", character.proficiencyBonus)}
                 </div>
+                <div style="margin:8px 0 4px; color:#9ca3af;">Навыки (через запятую)</div>
+                <div class="editable-row" style="margin-bottom:6px;">
+                  <textarea data-field="skills" rows="2" style="padding:6px 10px; border-radius:6px; border:1px solid #4b5563; background:#020617; color:#e5e7eb; font-size:12px; width:100%; resize:vertical;">${skills.join(', ')}</textarea>
+                </div>
+                <div style="margin:8px 0 4px; color:#9ca3af;">Предметы (через запятую)</div>
+                <div class="editable-row" style="margin-bottom:6px;">
+                  <textarea data-field="items" rows="2" style="padding:6px 10px; border-radius:6px; border:1px solid #4b5563; background:#020617; color:#e5e7eb; font-size:12px; width:100%; resize:vertical;">${items.join(', ')}</textarea>
+                </div>
               `;
             } else {
               details.innerHTML = `
+                ${alignment ? `<div style="margin-bottom:8px;"><span style="color:#9ca3af;">Мировоззрение:</span> <span style="color:#d4af37;">${alignment}</span></div>` : ''}
                 <div style="margin-bottom:4px; color:#9ca3af;">Характеристики</div>
                 <div style="display:flex; flex-wrap:wrap; gap:6px 10px; margin-bottom:6px;">
                   ${renderPill("STR", ab.strength)}
@@ -202,13 +230,25 @@
                   ${renderPill("CHA", ab.charisma)}
                 </div>
                 <div style="margin-bottom:4px; color:#9ca3af;">Бой</div>
-                <div style="display:flex; flex-wrap:wrap; gap:6px 10px;">
+                <div style="display:flex; flex-wrap:wrap; gap:6px 10px; margin-bottom:8px;">
                   ${renderPill("AC", character.armorClass)}
                   ${renderPill("ХП", `${hpCurrent} / ${hpMax}`)}
                   ${renderPill("Initiative", character.initiative)}
                   ${renderPill("Speed", character.speed)}
                   ${renderPill("Prof", character.proficiencyBonus)}
                 </div>
+                ${skills.length > 0 ? `
+                  <div style="margin-bottom:4px; color:#9ca3af;">Навыки</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+                    ${skills.map(s => `<span style="background:rgba(139,0,0,0.3); border:1px solid rgba(139,0,0,0.5); border-radius:4px; padding:3px 8px; font-size:12px; color:#d4af37;">${s}</span>`).join('')}
+                  </div>
+                ` : ''}
+                ${items.length > 0 ? `
+                  <div style="margin-bottom:4px; color:#9ca3af;">Предметы</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                    ${items.map(i => `<span style="background:rgba(75,0,130,0.3); border:1px solid rgba(75,0,130,0.5); border-radius:4px; padding:3px 8px; font-size:12px; color:#c4b5fd;">${i}</span>`).join('')}
+                  </div>
+                ` : ''}
               `;
             }
           }
@@ -269,9 +309,23 @@
                 else if (name === "prof") combat.proficiencyBonus = value;
               });
 
+              // Получаем мировоззрение
+              const alignmentSelect = details.querySelector('select[data-field="alignment"]');
+              const alignment = alignmentSelect ? alignmentSelect.value : "";
+
+              // Получаем навыки и предметы из текстовых полей
+              const skillsTextarea = details.querySelector('textarea[data-field="skills"]');
+              const itemsTextarea = details.querySelector('textarea[data-field="items"]');
+              
+              const skills = skillsTextarea ? skillsTextarea.value.split(',').map(s => s.trim()).filter(s => s) : [];
+              const items = itemsTextarea ? itemsTextarea.value.split(',').map(i => i.trim()).filter(i => i) : [];
+
               const updated = {
                 ...originalData,
                 abilityScores: ab,
+                alignment,
+                skills,
+                items,
                 ...combat,
               };
 

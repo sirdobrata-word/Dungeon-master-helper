@@ -262,11 +262,13 @@ func (s *server) updateCharacter(w http.ResponseWriter, r *http.Request, id stri
 }
 
 type generateCharacterRequest struct {
-	Name       string `json:"name"`
-	Class      string `json:"class"`
-	Race       string `json:"race"`
-	Background string `json:"background"`
-	Level      int    `json:"level"`
+	Name       string   `json:"name"`
+	Class      string   `json:"class"`
+	Race       string   `json:"race"`
+	Background string   `json:"background"`
+	Alignment  string   `json:"alignment"`
+	Level      int      `json:"level"`
+	Skills     []string `json:"skills"`
 }
 
 func (s *server) handleGenerateCharacter(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +290,9 @@ func (s *server) handleGenerateCharacter(w http.ResponseWriter, r *http.Request)
 		payload.Class,
 		payload.Race,
 		payload.Background,
+		payload.Alignment,
 		payload.Level,
+		payload.Skills,
 	)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
