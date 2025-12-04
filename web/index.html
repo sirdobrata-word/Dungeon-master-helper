@@ -133,7 +133,7 @@
               </div>
               <div class="field">
                 <label for="background">Предыстория</label>
-                <select id="background" name="background" required>
+                <select id="background" name="background" required onchange="toggleCustomBackground()">
                   <option value="">Не выбрано</option>
                   <option value="Прислужник">Прислужник</option>
                   <option value="Артист">Артист</option>
@@ -148,7 +148,9 @@
                   <option value="Моряк">Моряк</option>
                   <option value="Солдат">Солдат</option>
                   <option value="Беспризорник">Беспризорник</option>
+                  <option value="__custom__">✏️ Своя предыстория...</option>
                 </select>
+                <input id="background-custom" name="background-custom" type="text" placeholder="Введите свою предысторию" style="display: none; margin-top: 8px;" />
               </div>
             </div>
 
@@ -538,6 +540,31 @@
         }
       });
 
+      // Переключение поля своей предыстории
+      function toggleCustomBackground() {
+        const select = document.getElementById("background");
+        const customInput = document.getElementById("background-custom");
+        if (select.value === "__custom__") {
+          customInput.style.display = "block";
+          customInput.required = true;
+          customInput.focus();
+        } else {
+          customInput.style.display = "none";
+          customInput.required = false;
+          customInput.value = "";
+        }
+      }
+
+      // Получить значение предыстории (из списка или своё)
+      function getBackgroundValue() {
+        const select = document.getElementById("background");
+        const customInput = document.getElementById("background-custom");
+        if (select.value === "__custom__") {
+          return customInput.value.trim();
+        }
+        return select.value;
+      }
+
       // Создание персонажа
       const form = document.getElementById("character-form");
       const statusEl = document.getElementById("status");
@@ -575,9 +602,9 @@
 
         const commonPayload = {
           name: form.name.value.trim(),
-          class: form.class.value.trim(),
-          race: form.race.value.trim(),
-          background: form.background.value.trim(),
+          class: form.class.value,
+          race: form.race.value,
+          background: getBackgroundValue(),
           level: Number(form.level.value),
           alignment: form.alignment.value,
           skills: skills,
