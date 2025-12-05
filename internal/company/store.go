@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,6 +46,13 @@ func (s *MemoryStore) Create(c Company) (Company, error) {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	// Проверяем уникальность названия
+	for _, existing := range s.companies {
+		if strings.EqualFold(existing.Name, c.Name) {
+			return Company{}, ErrDuplicateName
+		}
+	}
 
 	if c.ID == "" {
 		c.ID = generateID()
@@ -98,6 +106,15 @@ func (s *MemoryStore) Update(c Company) error {
 	existing, ok := s.companies[c.ID]
 	if !ok {
 		return ErrNotFound
+	}
+
+	// Проверяем уникальность названия, если оно изменилось (исключая текущую компанию)
+	if !strings.EqualFold(existing.Name, c.Name) {
+		for id, comp := range s.companies {
+			if id != c.ID && strings.EqualFold(comp.Name, c.Name) {
+				return ErrDuplicateName
+			}
+		}
 	}
 
 	c.CreatedAt = existing.CreatedAt

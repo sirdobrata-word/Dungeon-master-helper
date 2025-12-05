@@ -162,5 +162,19 @@ func (s *PostgresStore) Update(id string, sheet CharacterSheet) (CharacterSheet,
 	return sheet, nil
 }
 
+func (s *PostgresStore) Delete(id string) error {
+	const deleteQuery = `DELETE FROM characters WHERE id = $1;`
 
+	res, err := s.db.Exec(deleteQuery, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete character: %w", err)
+	}
+
+	affected, err := res.RowsAffected()
+	if err == nil && affected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
 

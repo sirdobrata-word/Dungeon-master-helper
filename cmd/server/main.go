@@ -182,17 +182,36 @@ func (s *server) handleCharactersCollection(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *server) handleCharacterByID(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/characters/")
-	if id == "" {
+	path := strings.TrimPrefix(r.URL.Path, "/characters/")
+	if path == "" {
 		writeError(w, http.StatusBadRequest, "missing character id")
 		return
 	}
 
+	// Проверяем специальный путь для повышения уровня
+	if strings.HasSuffix(path, "/levelup") {
+		if r.Method == http.MethodPost {
+			id := strings.TrimSuffix(path, "/levelup")
+			if id == "" {
+				writeError(w, http.StatusBadRequest, "missing character id")
+				return
+			}
+			s.levelUpCharacter(w, r, id)
+			return
+		}
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	// Обычный путь с ID
+	id := path
 	switch r.Method {
 	case http.MethodGet:
 		s.getCharacter(w, r, id)
 	case http.MethodPut:
 		s.updateCharacter(w, r, id)
+	case http.MethodDelete:
+		s.deleteCharacter(w, r, id)
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
@@ -254,6 +273,53 @@ func (s *server) updateCharacter(w http.ResponseWriter, r *http.Request, id stri
 			return
 		}
 		// ошибки валидации и т.п. считаем ошибкой запроса
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, updated)
+}
+
+func (s *server) deleteCharacter(w http.ResponseWriter, r *http.Request, id string) {
+	err := s.characterStore.Delete(id)
+	if err != nil {
+		if errors.Is(err, characters.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "character not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "character deleted"})
+}
+
+func (s *server) levelUpCharacter(w http.ResponseWriter, r *http.Request, id string) {
+	// Получаем текущего персонажа
+	sheet, err := s.characterStore.Get(id)
+	if err != nil {
+		if errors.Is(err, characters.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "character not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Повышаем уровень
+	leveledUp, err := characters.LevelUp(sheet)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Сохраняем обновлённого персонажа
+	updated, err := s.characterStore.Update(id, leveledUp)
+	if err != nil {
+		if errors.Is(err, characters.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "character not found")
+			return
+		}
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -510,6 +576,10 @@ func (s *server) createCompany(w http.ResponseWriter, r *http.Request) {
 
 	created, err := s.companyStore.Create(comp)
 	if err != nil {
+		if errors.Is(err, company.ErrDuplicateName) {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -550,6 +620,10 @@ func (s *server) updateCompany(w http.ResponseWriter, r *http.Request, id string
 	if err != nil {
 		if errors.Is(err, company.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "company not found")
+			return
+		}
+		if errors.Is(err, company.ErrDuplicateName) {
+			writeError(w, http.StatusConflict, err.Error())
 			return
 		}
 		writeError(w, http.StatusBadRequest, err.Error())

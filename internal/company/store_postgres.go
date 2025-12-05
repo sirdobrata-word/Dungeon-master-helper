@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"dice-service/internal/characters"
@@ -57,6 +58,9 @@ BEGIN
 		-- Создаём индексы для поиска
 		CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(name);
 		CREATE INDEX IF NOT EXISTS idx_companies_created_at ON companies(created_at);
+		
+		-- Создаём уникальный индекс для названий (если его еще нет)
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_name_unique ON companies(LOWER(name));
 	END IF;
 END $$;`
 
@@ -70,6 +74,18 @@ END $$;`
 func (s *PostgresStore) Create(c Company) (Company, error) {
 	if err := c.Validate(); err != nil {
 		return Company{}, err
+	}
+
+	// Проверяем уникальность названия
+	const checkQuery = `SELECT id FROM companies WHERE LOWER(name) = LOWER($1);`
+	var existingID string
+	err := s.db.QueryRow(checkQuery, c.Name).Scan(&existingID)
+	if err == nil {
+		// Найдена компания с таким же названием
+		return Company{}, ErrDuplicateName
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		// Другая ошибка базы данных
+		return Company{}, fmt.Errorf("failed to check company name: %w", err)
 	}
 
 	if c.ID == "" {
@@ -86,6 +102,10 @@ func (s *PostgresStore) Create(c Company) (Company, error) {
 
 	const insertQuery = `INSERT INTO companies (id, name, created_at, updated_at, data) VALUES ($1, $2, $3, $4, $5::jsonb);`
 	if _, err := s.db.Exec(insertQuery, c.ID, c.Name, c.CreatedAt, c.UpdatedAt, data); err != nil {
+		// Проверяем, не нарушен ли уникальный индекс
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			return Company{}, ErrDuplicateName
+		}
 		return Company{}, fmt.Errorf("failed to insert company: %w", err)
 	}
 
@@ -145,6 +165,20 @@ func (s *PostgresStore) Update(c Company) error {
 	existing, err := s.Get(c.ID)
 	if err != nil {
 		return err
+	}
+
+	// Проверяем уникальность названия, если оно изменилось (исключая текущую компанию)
+	if !strings.EqualFold(existing.Name, c.Name) {
+		const checkQuery = `SELECT id FROM companies WHERE LOWER(name) = LOWER($1) AND id != $2;`
+		var existingID string
+		err := s.db.QueryRow(checkQuery, c.Name, c.ID).Scan(&existingID)
+		if err == nil {
+			// Найдена другая компания с таким же названием
+			return ErrDuplicateName
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			// Другая ошибка базы данных
+			return fmt.Errorf("failed to check company name: %w", err)
+		}
 	}
 
 	if c.Characters == nil {

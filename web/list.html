@@ -140,6 +140,27 @@
           expandBtn.style.padding = "5px 10px";
           expandBtn.style.fontSize = "12px";
 
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "🗑️ Удалить";
+          deleteBtn.className = "btn";
+          deleteBtn.style.padding = "5px 10px";
+          deleteBtn.style.fontSize = "12px";
+          deleteBtn.style.background = "rgba(139,0,0,0.6)";
+          deleteBtn.style.borderColor = "rgba(139,0,0,0.8)";
+
+          const levelUpBtn = document.createElement("button");
+          levelUpBtn.textContent = "⬆️ Повысить уровень";
+          levelUpBtn.className = "btn";
+          levelUpBtn.style.padding = "5px 10px";
+          levelUpBtn.style.fontSize = "12px";
+          levelUpBtn.style.background = "rgba(34,197,94,0.6)";
+          levelUpBtn.style.borderColor = "rgba(34,197,94,0.8)";
+          if (ch.level >= 20) {
+            levelUpBtn.disabled = true;
+            levelUpBtn.style.opacity = "0.5";
+            levelUpBtn.title = "Максимальный уровень достигнут";
+          }
+
           const editBtn = document.createElement("button");
           editBtn.textContent = "Редактировать";
           editBtn.className = "btn";
@@ -370,7 +391,122 @@
             }
           });
 
+          deleteBtn.addEventListener("click", async () => {
+            if (!confirm(`Удалить персонажа "${ch.name || '(без имени)'}"?`)) {
+              return;
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = "Удаление...";
+
+            try {
+              const res = await fetch(`/characters/${ch.id}`, {
+                method: "DELETE",
+              });
+
+              const data = await res.json().catch(() => null);
+
+              if (!res.ok) {
+                const msg = (data && data.error) || "Ошибка удаления";
+                alert(msg);
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = "🗑️ Удалить";
+                return;
+              }
+
+              // Удаляем карточку из DOM
+              card.remove();
+
+              // Обновляем счетчик
+              const remaining = listEl.querySelectorAll(".grid-card").length;
+              if (remaining === 0) {
+                statusEl.textContent = "Список пуст";
+                emptyEl.style.display = "block";
+              } else {
+                statusEl.textContent = `Найдено персонажей: ${remaining}`;
+              }
+
+              statusEl.classList.remove("error");
+            } catch (err) {
+              console.error(err);
+              alert("Сетевой сбой при удалении");
+              deleteBtn.disabled = false;
+              deleteBtn.textContent = "🗑️ Удалить";
+            }
+          });
+
+          levelUpBtn.addEventListener("click", async () => {
+            if (ch.level >= 20) {
+              alert("Персонаж уже достиг максимального уровня (20)");
+              return;
+            }
+
+            if (!confirm(`Повысить уровень персонажа "${ch.name || '(без имени)'}" с ${ch.level} до ${ch.level + 1}?`)) {
+              return;
+            }
+
+            levelUpBtn.disabled = true;
+            levelUpBtn.textContent = "Повышение...";
+
+            try {
+              const res = await fetch(`/characters/${ch.id}/levelup`, {
+                method: "POST",
+              });
+
+              const data = await res.json().catch(() => null);
+
+              if (!res.ok) {
+                const msg = (data && data.error) || "Ошибка повышения уровня";
+                alert(msg);
+                levelUpBtn.disabled = false;
+                levelUpBtn.textContent = "⬆️ Повысить уровень";
+                return;
+              }
+
+              // Обновляем данные персонажа в карточке
+              const updated = data;
+              
+              // Обновляем отображаемые данные
+              meta.textContent = `${updated.race || "?"} · ${updated.class || "?"} · уровень ${
+                updated.level || "?"
+              }${updated.alignment ? ` · ${updated.alignment}` : ""}`;
+              
+              // Обновляем детали если они открыты
+              if (details.style.display !== "none") {
+                renderDetails(updated, editMode);
+              }
+              
+              // Обновляем оригинальные данные
+              originalData = { ...updated };
+              ch = updated;
+
+              // Обновляем кнопку если достигнут максимум
+              if (updated.level >= 20) {
+                levelUpBtn.disabled = true;
+                levelUpBtn.style.opacity = "0.5";
+                levelUpBtn.title = "Максимальный уровень достигнут";
+              }
+
+              levelUpBtn.textContent = "⬆️ Повысить уровень";
+              levelUpBtn.disabled = false;
+
+              statusEl.textContent = `Персонаж повышен до уровня ${updated.level}!`;
+              statusEl.classList.remove("error");
+              setTimeout(() => {
+                const items = listEl.querySelectorAll(".grid-card").length;
+                statusEl.textContent = `Найдено персонажей: ${items}`;
+              }, 3000);
+            } catch (err) {
+              console.error(err);
+              alert("Сетевой сбой при повышении уровня");
+              levelUpBtn.disabled = false;
+              levelUpBtn.textContent = "⬆️ Повысить уровень";
+            }
+          });
+
           actions.appendChild(expandBtn);
+          actions.appendChild(levelUpBtn);
+          actions.appendChild(deleteBtn);
           actions.appendChild(editBtn);
           actions.appendChild(saveBtn);
           actions.appendChild(cancelBtn);

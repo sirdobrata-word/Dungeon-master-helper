@@ -12,6 +12,7 @@ type Store interface {
 	Get(id string) (CharacterSheet, error)
 	List() []CharacterSheet
 	Update(id string, sheet CharacterSheet) (CharacterSheet, error)
+	Delete(id string) error
 }
 
 type MemoryStore struct {
@@ -84,6 +85,25 @@ func (s *MemoryStore) Update(id string, sheet CharacterSheet) (CharacterSheet, e
 	sheet.ID = id
 	s.byID[id] = sheet
 	return sheet, nil
+}
+
+func (s *MemoryStore) Delete(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.byID[id]; !ok {
+		return ErrNotFound
+	}
+
+	delete(s.byID, id)
+	// Удаляем из порядка
+	for i, v := range s.order {
+		if v == id {
+			s.order = append(s.order[:i], s.order[i+1:]...)
+			break
+		}
+	}
+	return nil
 }
 
 func generateID() string {

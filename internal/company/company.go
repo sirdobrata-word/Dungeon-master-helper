@@ -9,6 +9,7 @@ import (
 )
 
 var ErrNotFound = errors.New("company not found")
+var ErrDuplicateName = errors.New("company with this name already exists")
 
 // Company представляет склад/кампанию, объединяющую персонажей и монстров
 type Company struct {
