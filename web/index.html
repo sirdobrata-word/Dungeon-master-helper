@@ -79,6 +79,76 @@
           </div>
         </section>
 
+        <!-- Блок симуляции проверок -->
+        <section class="card">
+          <h2>Симуляция проверок</h2>
+          <p style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">
+            Симулируй проверки характеристик и навыков (1d20 + модификатор + бонус мастерства)
+          </p>
+          
+          <form id="check-form" class="form">
+            <div class="form-row">
+              <div class="field">
+                <label for="check-ability">Характеристика</label>
+                <select id="check-ability" required>
+                  <option value="">Выберите характеристику</option>
+                  <option value="strength">Сила (STR)</option>
+                  <option value="dexterity">Ловкость (DEX)</option>
+                  <option value="constitution">Телосложение (CON)</option>
+                  <option value="intelligence">Интеллект (INT)</option>
+                  <option value="wisdom">Мудрость (WIS)</option>
+                  <option value="charisma">Харизма (CHA)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="check-ability-value">Значение характеристики</label>
+                <input id="check-ability-value" type="number" min="1" max="30" value="10" required />
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="field">
+                <label for="check-proficiency">Бонус мастерства</label>
+                <input id="check-proficiency" type="number" min="0" max="6" value="2" required />
+              </div>
+              <div class="field">
+                <label for="check-has-proficiency">Владеет навыком?</label>
+                <select id="check-has-proficiency">
+                  <option value="false">Нет</option>
+                  <option value="true">Да</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="field">
+                <label for="check-bonus">Дополнительный бонус</label>
+                <input id="check-bonus" type="number" value="0" />
+                <small style="color: #9ca3af; font-size: 11px; margin-top: 4px; display: block;">
+                  Дополнительные модификаторы (магические предметы, заклинания и т.д.)
+                </small>
+              </div>
+              <div class="field">
+                <label for="check-dc">Сложность проверки (DC)</label>
+                <input id="check-dc" type="number" min="0" max="30" placeholder="Не задана" />
+                <small style="color: #9ca3af; font-size: 11px; margin-top: 4px; display: block;">
+                  Оставьте пустым, если не нужна проверка против DC
+                </small>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Бросить проверку</button>
+              <span id="check-status" class="status"></span>
+            </div>
+          </form>
+
+          <div id="check-result" class="card" style="margin-top: 12px; padding: 12px; display: none; background: rgba(15, 23, 42, 0.95);">
+            <h4 style="margin: 0 0 8px; font-size: 14px;">Результат проверки</h4>
+            <div id="check-result-content"></div>
+          </div>
+        </section>
+
         <!-- Форма создания персонажа -->
         <section class="card">
           <h2>Новый персонаж</h2>
@@ -489,6 +559,157 @@
           diceStatus.classList.add("error");
         }
       }
+
+      // Симуляция проверок
+      const checkForm = document.getElementById("check-form");
+      const checkStatus = document.getElementById("check-status");
+      const checkResult = document.getElementById("check-result");
+      const checkResultContent = document.getElementById("check-result-content");
+
+      // Функция для вычисления модификатора характеристики
+      function getAbilityModifier(score) {
+        return Math.floor((score - 10) / 2);
+      }
+
+      // Функция для получения названия характеристики
+      function getAbilityName(ability) {
+        const names = {
+          strength: "Сила",
+          dexterity: "Ловкость",
+          constitution: "Телосложение",
+          intelligence: "Интеллект",
+          wisdom: "Мудрость",
+          charisma: "Харизма"
+        };
+        return names[ability] || ability;
+      }
+
+      checkForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const ability = document.getElementById("check-ability").value;
+        const abilityValue = parseInt(document.getElementById("check-ability-value").value) || 10;
+        const proficiency = parseInt(document.getElementById("check-proficiency").value) || 0;
+        const hasProficiency = document.getElementById("check-has-proficiency").value === "true";
+        const bonus = parseInt(document.getElementById("check-bonus").value) || 0;
+        const dcInput = document.getElementById("check-dc").value.trim();
+        const dc = dcInput ? parseInt(dcInput) : null;
+
+        if (!ability) {
+          checkStatus.textContent = "Выберите характеристику";
+          checkStatus.classList.add("error");
+          return;
+        }
+
+        checkStatus.textContent = "Бросаю проверку...";
+        checkStatus.classList.remove("error");
+        checkResult.style.display = "none";
+
+        try {
+          // Вычисляем модификатор характеристики
+          const abilityModifier = getAbilityModifier(abilityValue);
+          
+          // Бонус мастерства добавляется только если навык владеется
+          const proficiencyBonus = hasProficiency ? proficiency : 0;
+          
+          // Общий модификатор
+          const totalModifier = abilityModifier + proficiencyBonus + bonus;
+          
+          // Бросаем 1d20
+          const res = await fetch("/roll", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ expression: "1d20" }),
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            const msg = (data && data.error) || "Ошибка броска кубиков";
+            checkStatus.textContent = msg;
+            checkStatus.classList.add("error");
+            return;
+          }
+
+          const d20Roll = data.total;
+          const total = d20Roll + totalModifier;
+          
+          // Определяем успех/провал
+          let resultClass = "";
+          let resultText = "";
+          let dcInfo = "";
+          
+          if (dc !== null) {
+            // Если задана сложность проверки (DC), сравниваем с ней
+            if (d20Roll === 20) {
+              resultClass = "color: #22c55e; font-weight: 600;";
+              resultText = "Критический успех! (автоматический успех)";
+            } else if (d20Roll === 1) {
+              resultClass = "color: #ef4444; font-weight: 600;";
+              resultText = "Критический провал! (автоматический провал)";
+            } else if (total >= dc) {
+              resultClass = "color: #22c55e; font-weight: 600;";
+              resultText = `Успех! (${total} >= DC ${dc})`;
+            } else {
+              resultClass = "color: #ef4444; font-weight: 600;";
+              resultText = `Провал! (${total} < DC ${dc})`;
+            }
+            dcInfo = `<div style="margin-bottom: 8px; padding: 8px; background: rgba(139, 0, 0, 0.2); border-left: 3px solid rgba(139, 0, 0, 0.6); border-radius: 4px;">
+              <strong>Сложность проверки (DC):</strong> <span style="font-size: 18px; font-weight: 600; color: #d4af37;">${dc}</span>
+            </div>`;
+          } else {
+            // Если DC не задана, используем старую логику (просто показываем результат)
+            if (d20Roll === 20) {
+              resultClass = "color: #22c55e; font-weight: 600;";
+              resultText = "Критический успех!";
+            } else if (d20Roll === 1) {
+              resultClass = "color: #ef4444; font-weight: 600;";
+              resultText = "Критический провал!";
+            } else if (total >= 15) {
+              resultClass = "color: #22c55e;";
+              resultText = "Успех";
+            } else {
+              resultClass = "color: #ef4444;";
+              resultText = "Провал";
+            }
+          }
+
+          checkStatus.textContent = "Успешно";
+          checkStatus.classList.remove("error");
+
+          // Отображаем результат
+          checkResult.style.display = "block";
+          checkResultContent.innerHTML = `
+            <div style="margin-bottom: 8px;">
+              <strong>Проверка:</strong> ${getAbilityName(ability)} (${ability.toUpperCase()})
+            </div>
+            ${dcInfo}
+            <div style="margin-bottom: 6px;">
+              <strong>Бросок d20:</strong> <span style="font-size: 18px; font-weight: 600; color: #a5b4fc;">${d20Roll}</span>
+            </div>
+            <div style="margin-bottom: 6px; font-size: 13px; color: #9ca3af;">
+              <div>Модификатор характеристики (${abilityValue}): ${abilityModifier >= 0 ? "+" : ""}${abilityModifier}</div>
+              ${hasProficiency ? `<div>Бонус мастерства: +${proficiencyBonus}</div>` : ""}
+              ${bonus !== 0 ? `<div>Дополнительный бонус: ${bonus > 0 ? "+" : ""}${bonus}</div>` : ""}
+            </div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(148, 163, 184, 0.2);">
+              <div style="margin-bottom: 6px;">
+                <strong>Итого:</strong> <span style="font-size: 20px; font-weight: 600; color: #a5b4fc;">${total}</span>
+                ${totalModifier !== 0 ? ` <span style="font-size: 14px; color: #9ca3af;">(${d20Roll} ${totalModifier >= 0 ? "+" : ""}${totalModifier})</span>` : ""}
+              </div>
+              <div style="${resultClass}; font-size: 16px; margin-top: 8px; padding: 8px; background: ${dc !== null ? (total >= dc ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)') : 'rgba(148, 163, 184, 0.1)'}; border-radius: 4px; border-left: 3px solid ${dc !== null ? (total >= dc ? '#22c55e' : '#ef4444') : '#9ca3af'};">
+                <strong>${resultText}</strong>
+              </div>
+            </div>
+          `;
+        } catch (err) {
+          console.error(err);
+          checkStatus.textContent = "Сетевой сбой";
+          checkStatus.classList.add("error");
+        }
+      });
 
       diceForm.addEventListener("submit", async (e) => {
         e.preventDefault();
